@@ -91,6 +91,10 @@ export default async function ExplorePage({
 
           {/* One GET form owns search + filters: works with JavaScript off. */}
           <form method="get" action="/explore" className="mt-7">
+            {/* A search submit must not silently drop an active sort. */}
+            {query.sort && (
+              <input type="hidden" name="sort" value={query.sort} />
+            )}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <SearchInput
                 name="q"

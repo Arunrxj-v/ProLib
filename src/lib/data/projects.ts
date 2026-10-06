@@ -172,6 +172,9 @@ const SORTS: Record<ProjectSort, SQL> = {
   newest: desc(sql`COALESCE(${projects.publishedAt}, ${projects.createdAt})`),
   popular: desc(projects.likeCount),
   views: desc(projects.viewCount),
+  // Trending = a simple, documented ranking over real engagement only:
+  // each like weighs 3, each 25 views weigh 1 (integer division). The
+  // inputs are the persisted counters — nothing is invented or decayed.
   trending: desc(sql`(${projects.likeCount} * 3 + ${projects.viewCount} / 25)`),
 };
 
@@ -179,7 +182,23 @@ async function baseWhere(query: ProjectQuery, statuses: ProjectPublicationStatus
   const conditions: SQL[] = [inArray(projects.publicationStatus, statuses)];
 
   if (query.department) {
-    conditions.push(eq(departments.slug, query.department));
+    // A project is associated with a department through its own record OR
+    // through its owner's profile — both count as "a CSE project", so the
+    // filter uses project/user department data (§2). The lookup is by slug,
+    // compared case-insensitively, and a project with neither never matches.
+    conditions.push(sql`(
+      projects.department_id = (
+        SELECT d.id FROM departments d
+        WHERE lower(d.slug) = lower(${query.department}) LIMIT 1
+      )
+      OR projects.owner_id IN (
+        SELECT u.id FROM users u
+        WHERE u.department_id = (
+          SELECT d2.id FROM departments d2
+          WHERE lower(d2.slug) = lower(${query.department}) LIMIT 1
+        )
+      )
+    )`);
   }
   if (query.category) {
     conditions.push(eq(categories.slug, query.category));
@@ -213,7 +232,11 @@ async function baseWhere(query: ProjectQuery, statuses: ProjectPublicationStatus
   }
 
   if (query.openSource) {
-    conditions.push(sql`projects.github_url IS NOT NULL`);
+    // §8: only the real repository association counts — the
+    // github_repository_id foreign key into github_repositories, set when a
+    // student picks a repo through the OAuth picker or pastes a valid GitHub
+    // URL. A populated URL field on its own is not an association.
+    conditions.push(sql`projects.github_repository_id IS NOT NULL`);
   }
 
   const textCondition = await projectTextMatch(query.q, [

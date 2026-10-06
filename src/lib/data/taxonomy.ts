@@ -39,7 +39,9 @@ export async function getDepartments(): Promise<DepartmentOption[]> {
   const rows = await rawRows<DepartmentRow>(sql`
     SELECT d.id, d.name, d.slug, d.code, d.description,
       (SELECT COUNT(*) FROM projects p
-        WHERE p.department_id = d.id
+        WHERE (p.department_id = d.id
+               OR p.owner_id IN (
+                 SELECT u.id FROM users u WHERE u.department_id = d.id))
           AND p.publication_status IN (${statusList(statuses)})) AS project_count
     FROM departments d
     WHERE d.active IS TRUE

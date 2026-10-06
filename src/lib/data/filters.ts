@@ -17,8 +17,41 @@ function isSort(value: string | undefined): value is ProjectSort {
 }
 
 /**
+ * Shared/bookmarked URLs are matched leniently: `?department=CSE`, `cse` and
+ * `Cse ` all resolve to the slug `cse`. Slugs are lowercase and
+ * hyphen-separated by construction, so a mismatched case can never silently
+ * drop a filter (the UI would then show "All departments" while the URL
+ * claims a filter — the worst of both worlds).
+ */
+function asSlug(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const slug = value
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  return slug.length > 0 ? slug : undefined;
+}
+
+/**
+ * Enum-style values (project type, stage) are snake_case in the schema —
+ * accept `Open Source`, `open-source` and `open_source` alike, plus any
+ * casing (`Hackathon`, `COMPLETED`, `In Progress`).
+ */
+function asEnum(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const normalized = value.toLowerCase().trim().replace(/[\s-]+/g, "_");
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+/**
  * Turns raw `searchParams` into the query the data layer understands.
  * Unknown values are dropped rather than passed through to SQL.
+ *
+ * The stage filter accepts both the form field name (`status`) and the
+ * friendlier `stage` alias used in shareable links — an unrecognised filter
+ * parameter is never allowed to sit in the URL pretending to filter.
  */
 export function parseProjectQuery(
   params: Record<string, string | string[] | undefined>,
@@ -28,13 +61,15 @@ export function parseProjectQuery(
 
   return {
     q: first(params.q),
-    department: first(params.department),
-    category: first(params.category),
-    type: first(params.type),
-    status: first(params.status),
-    technology: first(params.technology),
-    year: first(params.year),
-    openSource: first(params.openSource) === "1",
+    department: asSlug(first(params.department)),
+    category: asSlug(first(params.category)),
+    type: asEnum(first(params.type)),
+    status: asEnum(first(params.status) ?? first(params.stage)),
+    technology: asSlug(first(params.technology)),
+    year: asSlug(first(params.year)),
+    openSource: ["1", "true"].includes(
+      (first(params.openSource) ?? "").toLowerCase(),
+    ),
     sort: isSort(sort) ? sort : undefined,
     page: Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1,
     pageSize: PAGE_SIZE,
