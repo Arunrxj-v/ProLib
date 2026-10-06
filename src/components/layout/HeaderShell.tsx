@@ -8,6 +8,7 @@ import { BrandLink } from "@/components/layout/BrandLogo";
 import { SearchPalette } from "@/components/layout/SearchPalette";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
+import { SITE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export type HeaderUser = {
@@ -58,7 +59,7 @@ export function HeaderShell({ user }: { user: HeaderUser | null }) {
             <BrandLink />
             <span className="hidden items-center gap-1.5 rounded-full border border-gh-border bg-gh-subtle px-2.5 py-0.5 font-mono text-xs text-gh-fg-muted sm:flex">
               <span className="h-1.5 w-1.5 rounded-full bg-gh-success" />
-              <span>Campus Edition</span>
+              <span>{SITE.edition}</span>
             </span>
           </div>
 

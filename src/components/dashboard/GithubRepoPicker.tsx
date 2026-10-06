@@ -9,6 +9,8 @@ type Status = {
   configured: boolean;
   signedIn: boolean;
   connected: boolean;
+  /** Only present once connected — display identity, never the token. */
+  identity?: { login: string } | null;
 };
 
 type RepoItem = {
@@ -130,7 +132,9 @@ export function GithubRepoPicker({
         {status?.connected && status.configured && (
           <span className="inline-flex items-center gap-1 rounded-full border border-gh-border bg-gh-inset px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-gh-fg-muted">
             <Icon name="check_circle" size={11} tone="success" />
-            GitHub connected
+            {status.identity?.login
+              ? `GitHub connected as @${status.identity.login}`
+              : "GitHub connected"}
           </span>
         )}
       </div>
@@ -150,8 +154,13 @@ export function GithubRepoPicker({
         <p className="text-xs text-gh-fg-muted">Checking GitHub connection…</p>
       ) : !status.configured ? (
         <p className="rounded-md border border-gh-border bg-gh-inset px-3 py-2.5 text-xs leading-relaxed text-gh-fg-muted">
-          GitHub connection isn&apos;t configured yet — paste the repository
-          URL below instead.
+          GitHub OAuth isn&apos;t configured in this environment. Set{" "}
+          <code className="text-gh-accent">GITHUB_CLIENT_ID</code>,{" "}
+          <code className="text-gh-accent">GITHUB_CLIENT_SECRET</code> and{" "}
+          <code className="text-gh-accent">GITHUB_CALLBACK_URL</code> in{" "}
+          <code className="text-gh-accent">.env.local</code> (see{" "}
+          <code className="text-gh-accent">.env.example</code>) and reload —
+          Connect GitHub appears here automatically.
         </p>
       ) : !status.connected ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-gh-border bg-gh-inset px-3 py-2.5">

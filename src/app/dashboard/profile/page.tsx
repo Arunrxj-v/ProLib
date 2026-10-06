@@ -183,7 +183,7 @@ export default async function ProfilePage({
                   ? `Connected as @${githubIdentity.login}`
                   : githubConfigured
                     ? "Not connected"
-                    : "Not configured"
+                    : "Not configured in this environment"
               }
             />
             <div className="space-y-3 p-5">
@@ -236,12 +236,14 @@ export default async function ProfilePage({
                     GitHub OAuth is not configured on this instance.
                   </p>
                   <p className="mt-1">
-                    Set <code className="text-gh-accent">GITHUB_CLIENT_ID</code>{" "}
-                    and{" "}
+                    Set <code className="text-gh-accent">GITHUB_CLIENT_ID</code>,{" "}
                     <code className="text-gh-accent">GITHUB_CLIENT_SECRET</code>{" "}
+                    and{" "}
+                    <code className="text-gh-accent">GITHUB_CALLBACK_URL</code>{" "}
                     in <code className="text-gh-accent">.env.local</code> (see{" "}
-                    <code className="text-gh-accent">.env.example</code>). Until
-                    then you can still paste a repository URL on any project.
+                    <code className="text-gh-accent">.env.example</code>) and
+                    restart the dev server. Until then you can still paste a
+                    repository URL on any project.
                   </p>
                 </div>
               )}

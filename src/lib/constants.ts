@@ -114,5 +114,5 @@ export const SITE = {
   tagline: "Discover what your college is building.",
   description:
     "Explore engineering capstones, research prototypes, and open source tools built by student engineers. Preserving campus innovation across batches with reproducible architecture and verified code.",
-  edition: "Campus Edition",
+  edition: "CEC Archive",
 } as const;
