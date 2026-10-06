@@ -19,7 +19,7 @@ export default async function DashboardLayout({
                   {user.role === "admin" ? "Moderator console" : "Student dashboard"}
                 </p>
                 <h1 className="text-xl font-semibold text-gh-fg-default sm:text-2xl">
-                  {user.name}
+                  Welcome, {user.name}
                 </h1>
               </div>
             </div>

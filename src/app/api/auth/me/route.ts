@@ -28,9 +28,12 @@ export async function GET() {
         id: user.id,
         name: user.name,
         email: user.email,
+        // `image` is the contract name clients expect; `avatarUrl` is kept
+        // as the internal alias so both agree (null when never uploaded).
+        image: user.avatarUrl,
+        avatarUrl: user.avatarUrl,
         username: user.username,
         role: user.role,
-        avatarUrl: user.avatarUrl,
         departmentId: user.departmentId,
         batch: user.batch,
       },
