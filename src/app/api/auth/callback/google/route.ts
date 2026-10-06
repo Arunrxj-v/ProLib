@@ -60,6 +60,17 @@ export async function GET(request: NextRequest) {
   if (existing[0]) {
     if (existing[0].status === "suspended") return fail(request, "suspended");
     userId = existing[0].id;
+    // This route only runs when Google reports the address as verified
+    // (line above), so Google has proven control of the same email the
+    // account uses — record that proof instead of demanding a second one.
+    // This is provider attestation, not an automatic local bypass: without
+    // Google's `emailVerified` the callback fails before reaching here.
+    if (!existing[0].emailVerifiedAt) {
+      await db
+        .update(users)
+        .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
+        .where(eq(users.id, userId));
+    }
     // Keep the avatar in step with the provider; never invent other fields.
     if (profile.picture && existing[0].avatarUrl !== profile.picture) {
       await db

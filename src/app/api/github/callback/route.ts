@@ -20,16 +20,20 @@ function sameValue(a: string | undefined, b: string | undefined) {
 }
 
 function isUniqueViolation(error: unknown): boolean {
-  if (error && typeof error === "object" && "code" in error) {
-    // PostgreSQL SQLSTATE for a unique-constraint violation.
-    if ((error as { code?: unknown }).code === "23505") return true;
+  // drizzle-orm wraps driver errors in DrizzleQueryError; the SQLSTATE lives
+  // on the original driver error in `.cause`.
+  let current: unknown = error;
+  for (let depth = 0; current && depth < 5; depth++) {
+    if (typeof current === "object" && "code" in current) {
+      // PostgreSQL SQLSTATE for a unique-constraint violation.
+      if ((current as { code?: unknown }).code === "23505") return true;
+    }
+    if (current instanceof Error && /duplicate key value violates unique constraint|UNIQUE constraint failed/i.test(current.message)) {
+      return true;
+    }
+    current = (current as { cause?: unknown }).cause;
   }
-  return (
-    error instanceof Error &&
-    /duplicate key value violates unique constraint|UNIQUE constraint failed/i.test(
-      error.message,
-    )
-  );
+  return false;
 }
 
 /**
@@ -126,6 +130,9 @@ export async function GET(request: NextRequest) {
   try {
     accessToken = await exchangeGithubCode(code, redirectUri);
   } catch (error) {
+    if (!(error instanceof GithubError)) {
+      console.error("[github/callback] code exchange failed:", error);
+    }
     return fail(error instanceof GithubError ? error.reason : "unreachable");
   }
 
@@ -140,6 +147,7 @@ export async function GET(request: NextRequest) {
       // Another ProLib user already linked this GitHub account.
       return fail("account_taken");
     }
+    console.error("[github/callback] account link failed:", error);
     return fail("unreachable");
   }
 

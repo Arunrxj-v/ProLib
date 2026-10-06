@@ -14,6 +14,7 @@ import { PROJECT_TYPES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 import { TechnologyPicker } from "./TechnologyPicker";
+import { GithubRepoPicker } from "./GithubRepoPicker";
 
 type Option = { id: string; name: string };
 type TechOption = { id: string; name: string; slug: string; icon: string | null; kind: string };
@@ -64,6 +65,7 @@ export function ProjectEditForm({
   const [selectedTech, setSelectedTech] = useState<string[]>(
     detail.technologies.map((item) => item.id),
   );
+  const [githubUrl, setGithubUrl] = useState(project.githubUrl ?? "");
 
   const errorFor = (key: string) => state.fieldErrors?.[key];
   const sectionKeys = Object.keys(SECTION_LABELS);
@@ -250,13 +252,21 @@ export function ProjectEditForm({
             onChange={setSelectedTech}
           />
 
+          <GithubRepoPicker value={githubUrl} onChange={setGithubUrl} />
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Repository URL" htmlFor="edit-github" error={errorFor("githubUrl")}>
+            <Field
+              label="Repository URL"
+              htmlFor="edit-github"
+              error={errorFor("githubUrl")}
+              hint="Fallback — paste any https://github.com/…/… link instead of connecting."
+            >
               <Input
                 id="edit-github"
                 name="githubUrl"
                 type="url"
-                defaultValue={project.githubUrl ?? ""}
+                value={githubUrl}
+                onChange={(event) => setGithubUrl(event.target.value)}
                 invalid={Boolean(errorFor("githubUrl"))}
                 placeholder="https://github.com/…"
               />

@@ -7,7 +7,6 @@ import {
   loginAction,
   resendVerificationAction,
   signupAction,
-  verifyEmailAction,
   type AuthState,
 } from "@/actions/auth";
 import { Button } from "@/components/ui/Button";
@@ -236,7 +235,7 @@ export function SignupForm({
           required
           invalid={Boolean(state.fieldErrors?.name)}
           defaultValue={values.name ?? ""}
-          placeholder="Arunraj V"
+          placeholder="Your full name"
         />
       </Field>
 
@@ -254,7 +253,7 @@ export function SignupForm({
           required
           invalid={Boolean(state.fieldErrors?.username)}
           defaultValue={values.username ?? ""}
-          placeholder="arunrajv"
+          placeholder="yourhandle"
         />
       </Field>
 
@@ -360,28 +359,14 @@ export function SignupForm({
 /* College email confirmation                                          */
 /* ------------------------------------------------------------------ */
 
-export function VerifyForm({ token }: { token: string }) {
-  const [state, formAction, pending] = useActionState(verifyEmailAction, {});
-
-  return (
-    <form action={formAction} className="space-y-4">
-      <ErrorSummary state={state} />
-      <input type="hidden" name="token" value={token} />
-      <SubmitButton
-        pending={pending}
-        idle="Confirm my college email"
-        working="Confirming…"
-      />
-    </form>
-  );
-}
-
 export function ResendForm({
   email,
   editable = true,
+  next,
 }: {
   email?: string;
   editable?: boolean;
+  next?: string;
 }) {
   const [state, formAction, pending] = useActionState(
     resendVerificationAction,
@@ -413,6 +398,8 @@ export function ResendForm({
       ) : (
         <input type="hidden" name="email" value={email ?? ""} />
       )}
+
+      {next && <input type="hidden" name="next" value={next} />}
 
       <SubmitButton
         pending={pending}

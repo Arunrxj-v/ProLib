@@ -23,9 +23,31 @@ import { githubAccounts, githubRepositories } from "@/lib/db/schema";
  *      `{ available: false, reason }` — never a throw, never invented data.
  */
 
-const GITHUB_API = "https://api.github.com";
-const AUTHORIZE_ENDPOINT = "https://github.com/login/oauth/authorize";
-const TOKEN_ENDPOINT = "https://github.com/login/oauth/access_token";
+const PRODUCTION_WEB_ORIGIN = "https://github.com";
+const PRODUCTION_API_ORIGIN = "https://api.github.com";
+
+/**
+ * Test-only endpoint overrides (§31): pointing ProLib at a local provider
+ * double exercises the *real* OAuth + API code paths (state checks, code
+ * exchange, per-user repository lists) without touching github.com.
+ *
+ * Both overrides are ignored in production, so a deployed instance always
+ * talks to the shipped GitHub endpoints regardless of the environment.
+ */
+function webOrigin(): string {
+  const override = process.env.GITHUB_WEB_ORIGIN?.trim().replace(/\/+$/, "");
+  if (process.env.NODE_ENV !== "production" && override) return override;
+  return PRODUCTION_WEB_ORIGIN;
+}
+
+function apiOrigin(): string {
+  const override = process.env.GITHUB_API_ORIGIN?.trim().replace(/\/+$/, "");
+  if (process.env.NODE_ENV !== "production" && override) return override;
+  return PRODUCTION_API_ORIGIN;
+}
+
+const authorizeEndpoint = (): string => `${webOrigin()}/login/oauth/authorize`;
+const tokenEndpoint = (): string => `${webOrigin()}/login/oauth/access_token`;
 
 /** Single-use OAuth state cookie; bound to one browser + one user. */
 export const GITHUB_STATE_COOKIE = "prolib_gh_state";
@@ -85,7 +107,7 @@ export function githubOAuthUrl(state: string, redirectUri: string): string {
   const redirect = encodeURIComponent(redirectUri);
   const nonce = encodeURIComponent(state);
   return (
-    `${AUTHORIZE_ENDPOINT}?client_id=${clientId}` +
+    `${authorizeEndpoint()}?client_id=${clientId}` +
     `&redirect_uri=${redirect}&scope=read:user%20repo&state=${nonce}`
   );
 }
@@ -134,7 +156,7 @@ export async function exchangeGithubCode(
 
   let response: Response;
   try {
-    response = await fetch(TOKEN_ENDPOINT, {
+    response = await fetch(tokenEndpoint(), {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -184,7 +206,7 @@ export type GithubUser = z.infer<typeof githubUserSchema>;
 export async function fetchGithubUser(token: string): Promise<GithubUser> {
   let response: Response;
   try {
-    response = await fetch(`${GITHUB_API}/user`, {
+    response = await fetch(`${apiOrigin()}/user`, {
       headers: apiHeaders(token),
       cache: "no-store",
     });
@@ -264,7 +286,7 @@ export async function listGithubRepos(
       sort: "updated",
       affiliation: "owner,collaborator,organization_member",
     });
-    payload = await getJson(`${GITHUB_API}/user/repos?${params}`, token);
+    payload = await getJson(`${apiOrigin()}/user/repos?${params}`, token);
   } else {
     // Resolve the owner from the stored account; fall back to the token's
     // own identity when the caller has no hint.
@@ -274,7 +296,7 @@ export async function listGithubRepos(
       per_page: "50",
     });
     const result = await getJson(
-      `${GITHUB_API}/search/repositories?${params}`,
+      `${apiOrigin()}/search/repositories?${params}`,
       token,
     );
     const items = (result as { items?: unknown } | null)?.items;
@@ -301,10 +323,12 @@ export type PublicRepoUnavailableReason = "not_found" | "rate_limited" | "unreac
 export type PublicRepoMeta =
   | {
       available: true;
+      githubId: number | null;
       fullName: string;
       htmlUrl: string;
       description: string | null;
       language: string | null;
+      defaultBranch: string | null;
       stargazersCount: number;
       forksCount: number;
       topics: string[];
@@ -314,10 +338,12 @@ export type PublicRepoMeta =
   | { available: false; reason: PublicRepoUnavailableReason };
 
 const publicRepoSchema = z.object({
+  id: z.number().nullish().transform((value) => value ?? null),
   full_name: z.string(),
   html_url: z.string(),
   description: z.string().nullish().transform((value) => value ?? null),
   language: z.string().nullish().transform((value) => value ?? null),
+  default_branch: z.string().nullish().transform((value) => value ?? null),
   stargazers_count: z.number(),
   forks_count: z.number(),
   topics: z.array(z.string()).default([]),
@@ -345,7 +371,7 @@ export async function fetchPublicRepoMeta(
 ): Promise<PublicRepoMeta> {
   try {
     const repoResponse = await fetch(
-      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
+      `${apiOrigin()}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
       { headers: apiHeaders(), next: { revalidate: 3600 } },
     );
     if (!repoResponse.ok) {
@@ -359,7 +385,7 @@ export async function fetchPublicRepoMeta(
     }
 
     const languagesResponse = await fetch(
-      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/languages`,
+      `${apiOrigin()}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/languages`,
       { headers: apiHeaders(), next: { revalidate: 3600 } },
     );
     if (!languagesResponse.ok) {
@@ -376,10 +402,12 @@ export async function fetchPublicRepoMeta(
 
     return {
       available: true,
+      githubId: repo.data.id,
       fullName: repo.data.full_name,
       htmlUrl: repo.data.html_url,
       description: repo.data.description,
       language: repo.data.language,
+      defaultBranch: repo.data.default_branch,
       stargazersCount: repo.data.stargazers_count,
       forksCount: repo.data.forks_count,
       topics: repo.data.topics,
@@ -576,6 +604,8 @@ export async function associateGithubRepository(
       stargazersCount: meta.available ? meta.stargazersCount : 0,
       forksCount: meta.available ? meta.forksCount : 0,
       language: meta.available ? meta.language : null,
+      githubId: meta.available ? meta.githubId : null,
+      defaultBranch: meta.available ? meta.defaultBranch : null,
       fetchedAt: meta.available ? new Date() : null,
     })
     .onConflictDoNothing({ target: githubRepositories.fullName });

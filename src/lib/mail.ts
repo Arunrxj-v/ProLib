@@ -22,6 +22,18 @@ export type MailResult = {
   devLink?: string;
 };
 
+/**
+ * §10: can this instance actually produce a verification link right now?
+ *
+ * Outside production the console/dev-link transport always counts; in
+ * production a Resend key is required. Callers must refuse to create an
+ * account (rather than silently dropping the mail) when this is false.
+ */
+export function mailCanSend(): boolean {
+  if (process.env.NODE_ENV !== "production") return true;
+  return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
 async function sendViaResend(input: {
   to: string;
   subject: string;
@@ -51,8 +63,13 @@ async function sendViaResend(input: {
   }
 }
 
-export function verificationLink(token: string): string {
-  return absoluteUrl(`/verify-email?token=${encodeURIComponent(token)}`);
+export function verificationLink(token: string, next?: string): string {
+  // The email link points at the API endpoint that CONSUMES the token and
+  // then redirects to a status page — opening the link is the verification
+  // step; there is no in-app "verify" button to press (§29).
+  const params = new URLSearchParams({ token });
+  if (next) params.set("next", next);
+  return absoluteUrl(`/api/auth/verify-email?${params.toString()}`);
 }
 
 /** Sends the single-use college-email confirmation link. */
@@ -60,13 +77,17 @@ export async function sendVerificationMail(input: {
   to: string;
   name: string;
   token: string;
+  /** Where the student was heading before signing up — survives the
+   *  verification detour inside the emailed link itself. */
+  next?: string;
 }): Promise<MailResult> {
-  const link = verificationLink(input.token);
-  const subject = `Verify your ${SITE.name} college email`;
+  const link = verificationLink(input.token, input.next);
+  const subject = `Verify your ${SITE.name} account`;
   const text = [
     `Hi ${input.name},`,
     "",
-    `Confirm your college email to publish projects on ${SITE.name}:`,
+    `Welcome to ${SITE.name}.`,
+    "Verify your email address to activate your account:",
     link,
     "",
     "The link works once and expires in 24 hours.",

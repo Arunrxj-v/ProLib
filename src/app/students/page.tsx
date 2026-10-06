@@ -227,7 +227,7 @@ export default async function StudentsPage({
                 name="q"
                 aria-label="Search students"
                 defaultValue={q ?? ""}
-                placeholder="e.g. Arunraj, firmware, PyTorch…"
+                placeholder="e.g. flutter, firmware, PyTorch…"
               />
             </Field>
 

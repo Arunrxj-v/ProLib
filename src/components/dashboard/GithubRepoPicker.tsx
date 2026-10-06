@@ -37,8 +37,12 @@ type ListState = "idle" | "stale" | "rateLimited" | "error";
  * status re-checks when the window regains focus.
  */
 export function GithubRepoPicker({
+  value,
   onChange,
 }: {
+  /** Current repository URL — when a real repo is selected, the picker
+   *  shows the ✓ state from §22 instead of silently filling a text box. */
+  value?: string;
   onChange: (url: string) => void;
 }) {
   const [status, setStatus] = useState<Status | null>(null);
@@ -47,6 +51,11 @@ export function GithubRepoPicker({
   const [repos, setRepos] = useState<RepoItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [listState, setListState] = useState<ListState>("idle");
+
+  const selectedMatch = value?.match(
+    /^https:\/\/github\.com\/([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+?)(?:\.git)?\/?$/,
+  );
+  const selected = selectedMatch ? selectedMatch[1] + "/" + selectedMatch[2] : null;
 
   const checkStatus = useCallback(() => {
     fetch("/api/github/status")
@@ -126,6 +135,13 @@ export function GithubRepoPicker({
         )}
       </div>
 
+      {selected && (
+        <p className="flex items-center gap-2 rounded-md border border-gh-border bg-gh-inset px-3 py-2 font-mono text-xs text-gh-fg-default">
+          <Icon name="check_circle" size={13} tone="success" />
+          {selected}
+        </p>
+      )}
+
       {statusFailed ? (
         <p className="rounded-md border border-gh-border bg-gh-inset px-3 py-2.5 text-xs leading-relaxed text-gh-danger">
           Unable to connect to ProLib server.
@@ -134,8 +150,8 @@ export function GithubRepoPicker({
         <p className="text-xs text-gh-fg-muted">Checking GitHub connection…</p>
       ) : !status.configured ? (
         <p className="rounded-md border border-gh-border bg-gh-inset px-3 py-2.5 text-xs leading-relaxed text-gh-fg-muted">
-          GitHub OAuth is not configured on this instance — paste the
-          repository URL below instead.
+          GitHub connection isn&apos;t configured yet — paste the repository
+          URL below instead.
         </p>
       ) : !status.connected ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-gh-border bg-gh-inset px-3 py-2.5">

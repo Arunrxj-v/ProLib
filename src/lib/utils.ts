@@ -19,7 +19,7 @@ export function slugify(input: string): string {
     .slice(0, 70);
 }
 
-/** "Arunraj V" -> "AV" */
+/** "Ada Lovelace" -> "AL" */
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";

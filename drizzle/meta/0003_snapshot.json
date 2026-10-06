@@ -1,6 +1,6 @@
 {
-  "id": "83a691a8-c0b8-4412-bb01-48b19d5c5887",
-  "prevId": "f4ebc409-4186-4f10-bc1f-d349e0b128f4",
+  "id": "d06d6c4b-9d0e-4e12-9ff5-4eb3b44baca4",
+  "prevId": "617625c8-5b97-4152-982b-f0b68a2af1ec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -557,6 +557,18 @@
         },
         "language": {
           "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "github_id": {
+          "name": "github_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_branch": {
+          "name": "default_branch",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -2337,6 +2349,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2402,6 +2420,5 @@
     "columns": {},
     "schemas": {},
     "tables": {}
-  },
-  "idx": 1
+  }
 }

@@ -15,6 +15,20 @@
       "when": 1791291600000,
       "tag": "0001_search",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791304391277,
+      "tag": "0002_conscious_living_lightning",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791305691687,
+      "tag": "0003_goofy_medusa",
+      "breakpoints": true
     }
   ]
 }

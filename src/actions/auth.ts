@@ -9,18 +9,20 @@ import {
   createSession,
   destroyCurrentSession,
 } from "@/lib/auth/session";
-import { consumeVerificationToken, issueVerificationToken } from "@/lib/auth/verification";
+import {
+  issueVerificationToken,
+  verificationSendGate,
+} from "@/lib/auth/verification";
 import {
   fieldErrorsOf,
   loginSchema,
   resendSchema,
   safeNextPath,
   signupSchema,
-  verifySchema,
 } from "@/lib/auth/validation";
 import { db } from "@/lib/db";
 import { departments, users } from "@/lib/db/schema";
-import { sendVerificationMail } from "@/lib/mail";
+import { mailCanSend, sendVerificationMail } from "@/lib/mail";
 import { isEmailDomainAllowed, isEmailVerificationRequired } from "@/lib/settings";
 
 export type AuthState = {
@@ -180,6 +182,18 @@ export async function signupAction(
   }
 
   const requiresVerification = await isEmailVerificationRequired();
+
+  // §10: refuse to create an account this instance cannot send a real
+  // verification link for — never silently drop the mail and never
+  // auto-verify as a shortcut.
+  if (requiresVerification && !mailCanSend()) {
+    return {
+      error: "Email verification is not configured on this server.",
+      info: "Configure the email provider (RESEND_API_KEY, EMAIL_FROM) before creating accounts — ProLib never verifies an account without the emailed link.",
+      values,
+    };
+  }
+
   const userId = crypto.randomUUID();
 
   await db.insert(users).values({
@@ -198,13 +212,31 @@ export async function signupAction(
 
   if (requiresVerification) {
     const token = await issueVerificationToken(userId);
-    const mail = await sendVerificationMail({ to: email, name, token });
+    const mail = await sendVerificationMail({
+      to: email,
+      name,
+      token,
+      next: next ?? undefined,
+    });
 
-    if (mail.devLink) {
-      // Development: no transport configured, so hand over the real link.
-      redirect(mail.devLink);
+    // Land on "check your inbox" — never on a page that holds the token.
+    // The account stays unverified until the emailed link (the only proof
+    // of control of the address) is opened (§3, §29). Off-production with
+    // no transport, the same token URL the email would carry is attached
+    // as a clearly marked development-only inspection link (§10).
+    const params = new URLSearchParams({ email });
+    if (next) params.set("next", next);
+    if (mail.delivered || mail.devLink) {
+      if (mail.devLink) {
+        const raw = new URL(mail.devLink).searchParams.get("token");
+        if (raw) params.set("devToken", raw);
+      }
+      redirect(`/verify-email?${params.toString()}`);
     }
-    redirect(`/verify-email?email=${encodeURIComponent(email)}`);
+    // Configured, but the provider rejected the send — say so instead of
+    // pretending an email is on its way.
+    params.set("send_failed", "1");
+    redirect(`/verify-email?${params.toString()}`);
   }
 
   await createSession(userId, await clientMeta());
@@ -215,43 +247,6 @@ export async function signupAction(
 /* College email confirmation                                          */
 /* ------------------------------------------------------------------ */
 
-export async function verifyEmailAction(
-  _prev: AuthState,
-  formData: FormData,
-): Promise<AuthState> {
-  const parsed = verifySchema.safeParse({ token: formData.get("token") });
-  if (!parsed.success) {
-    return { error: "That verification link is incomplete." };
-  }
-
-  const userId = await consumeVerificationToken(parsed.data.token);
-  if (!userId) {
-    return {
-      error: "This confirmation link is invalid or has expired.",
-      info: "Request a new link below — links last 24 hours and work once.",
-    };
-  }
-
-  const rows = await db
-    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  if (!rows[0]) {
-    return { error: "This account no longer exists." };
-  }
-
-  if (!rows[0].emailVerifiedAt) {
-    await db
-      .update(users)
-      .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
-      .where(eq(users.id, userId));
-  }
-
-  redirect("/login?verified=1");
-}
-
 export async function resendVerificationAction(
   _prev: AuthState,
   formData: FormData,
@@ -259,6 +254,18 @@ export async function resendVerificationAction(
   const parsed = resendSchema.safeParse({ email: formData.get("email") });
   if (!parsed.success) {
     return { fieldErrors: fieldErrorsOf(parsed.error) };
+  }
+
+  const values = { email: parsed.data.email };
+
+  // §10: a production instance without a mail provider must not pretend
+  // anything was sent.
+  if (!mailCanSend()) {
+    return {
+      error: "Email verification is not configured on this server.",
+      info: "Ask your administrator to configure the email provider (RESEND_API_KEY, EMAIL_FROM).",
+      values,
+    };
   }
 
   const rows = await db
@@ -269,22 +276,38 @@ export async function resendVerificationAction(
 
   const generic = {
     info: "If an unverified ProLib account uses that address, a new confirmation link is on its way.",
-    values: { email: parsed.data.email },
+    values,
   };
 
   const user = rows[0];
   if (!user || user.emailVerifiedAt) return generic;
+
+  // §11: no unlimited verification-email spam — one per minute, a few per
+  // hour, counted across superseded links as well.
+  const gate = await verificationSendGate(user.id);
+  if (gate.blocked) return { error: gate.message, values };
+
+  // Keep the student's original destination alive inside the new link.
+  const rawNext = formData.get("next");
+  const next =
+    typeof rawNext === "string" && rawNext
+      ? safeNextPath(rawNext, "") || undefined
+      : undefined;
 
   const token = await issueVerificationToken(user.id);
   const mail = await sendVerificationMail({
     to: user.email,
     name: user.name,
     token,
+    next,
   });
 
+  if (mail.delivered) return generic;
+  if (mail.devLink) return { ...generic, devVerifyUrl: mail.devLink };
   return {
-    ...generic,
-    devVerifyUrl: mail.devLink,
+    error: "The confirmation email could not be sent.",
+    info: "The mail provider rejected the message — try again shortly.",
+    values,
   };
 }
 
@@ -297,4 +320,3 @@ export async function logoutAction(): Promise<void> {
   redirect("/");
 }
 
-/** Re-exported so client forms can hash tokens they never need to see. */

@@ -209,14 +209,14 @@ export function ProjectWizard({ technologies }: Props) {
           </div>
 
           <div className="space-y-5">
-            <GithubRepoPicker onChange={setGithubUrl} />
+            <GithubRepoPicker value={githubUrl} onChange={setGithubUrl} />
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
-                label="GitHub repository URL"
+                label="Repository URL"
                 htmlFor="w-github"
                 error={errorFor("githubUrl")}
-                hint="Picked above, or paste any https://github.com/… link."
+                hint="Fallback — paste any https://github.com/…/… link instead of connecting."
               >
                 <Input
                   id="w-github"

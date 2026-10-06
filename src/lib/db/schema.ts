@@ -255,6 +255,11 @@ export const githubRepositories = pgTable(
     stargazersCount: integer("stargazers_count").notNull().default(0),
     forksCount: integer("forks_count").notNull().default(0),
     language: text("language"),
+    /** GitHub's own numeric repository id (§23) — null for manual links we
+     *  could not resolve through the API. */
+    githubId: bigint("github_id", { mode: "number" }),
+    /** Provider-reported default branch; null when unknown (never guessed). */
+    defaultBranch: text("default_branch"),
     /** When this row's metadata was last refreshed from the GitHub API. */
     fetchedAt: timestamptz("fetched_at"),
     createdAt: createdAt(),
@@ -507,6 +512,9 @@ export const verificationTokens = pgTable(
     purpose: text("purpose").notNull().default("verify_email"),
     expiresAt: timestamptz("expires_at").notNull(),
     consumedAt: timestamptz("consumed_at"),
+    /** Set when a newer link supersedes this one — the link is dead, but it
+     *  was never used, so the UI must not claim "already verified". */
+    revokedAt: timestamptz("revoked_at"),
     createdAt: createdAt(),
   },
   (t) => [index("verification_tokens_user_idx").on(t.userId)],
