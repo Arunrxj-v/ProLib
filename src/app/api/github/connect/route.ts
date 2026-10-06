@@ -19,8 +19,12 @@ export const dynamic = "force-dynamic";
  * 501 `configured: false` instead of redirecting somewhere that cannot
  * work — the UI must never show a fake "Connected" state.
  *
- * The redirect URI is built from the request origin, so any deployment
- * host works without a hardcoded localhost.
+ * The redirect URI comes from GITHUB_CALLBACK_URL when set — it must equal
+ * the Authorization callback URL registered on the OAuth App exactly (single
+ * path: /api/github/callback, no trailing slash). When unset it falls back to
+ * the request origin + /api/github/callback, so any deployment host works
+ * without a hardcoded localhost (local dev resolves to
+ * http://localhost:3000/api/github/callback).
  */
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
