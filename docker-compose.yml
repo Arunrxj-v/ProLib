@@ -1,0 +1,53 @@
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────────
+  # Data lives in a named volume so it survives `docker compose down`.
+  db:
+    image: postgres:17-alpine
+    container_name: prolib-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-prolib}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prolib}
+      POSTGRES_DB: ${POSTGRES_DB:-prolib}
+    ports:
+      # Local development only; change/removal is part of the home-server move.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - prolib-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-prolib} -d $${POSTGRES_DB:-prolib}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # ── ProLib (frontend + backend in one Next.js service) ─────────────────
+  # The Next.js server renders the UI *and* serves /api/* on the same port.
+  # Build/run this stack with:  docker compose up --build
+  # Local development (hot reload) instead runs `npm run dev` on the host
+  # against the `db` service above.
+  app:
+    build: .
+    container_name: prolib-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-prolib}:${POSTGRES_PASSWORD:-prolib}@db:5432/${POSTGRES_DB:-prolib}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      NODE_ENV: production
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      # Uploaded images persist on the host, outside the container.
+      - ./storage:/app/storage
+
+volumes:
+  prolib-pgdata:

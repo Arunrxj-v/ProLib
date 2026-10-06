@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local environment (env*.local stays out; .env.example stays committed)
+.env
+.env.local
+.env*.local
+!.env.example
+
+# local database + uploaded files
+/data/
+/storage/
+
