@@ -19,10 +19,6 @@ function loginUrl(request: NextRequest): URL {
   return url;
 }
 
-function isAuthScreen(pathname: string): boolean {
-  return pathname === "/login" || pathname === "/signup";
-}
-
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(SESSION_COOKIE);
@@ -38,13 +34,21 @@ export function proxy(request: NextRequest): NextResponse {
     return NextResponse.redirect(loginUrl(request), 302);
   }
 
-  // Signed-in visitors skip the auth screens entirely (the page-level guard
-  // still resolves the real user and picks /admin vs /dashboard by role).
-  if (hasSession && isAuthScreen(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", request.nextUrl), 302);
-  }
-
-  return NextResponse.next();
+  // Cookie *presence* is only ever used as a fast-path INTO /login — never
+  // to bounce away from an auth screen. Validity lives in the session table
+  // (requireUser/getCurrentUser), and /login + /signup run that database
+  // check themselves before redirecting a genuinely signed-in visitor.
+  // Treating presence as authentication here made a stale cookie (row wiped
+  // by a DB reset) bounce /login → /dashboard → /login forever — a redirect
+  // loop the browser could never settle (§15: middleware and the auth
+  // library must not disagree about what a session is).
+  //
+  // Forward the real path+query so page-level guards (layouts) can preserve
+  // the full destination in ?next= — the proxy sees the true URL, a layout
+  // only sees itself.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-prolib-path", `${pathname}${request.nextUrl.search}`);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

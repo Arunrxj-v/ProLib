@@ -1,6 +1,7 @@
 import "server-only";
 
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { db } from "@/lib/db";
@@ -9,11 +10,20 @@ import type { Project } from "@/lib/db/schema";
 
 import { getCurrentUser, type SessionUser } from "./session";
 
-/** Redirects an anonymous visitor to the sign-in screen. */
+/**
+ * Redirects an anonymous visitor to the sign-in screen.
+ *
+ * The destination prefers `x-prolib-path` — the exact path+query the proxy
+ * forwarded (so a guard running in a *layout* still preserves a deep link
+ * like /dashboard/projects/new in ?next=) — and falls back to the caller's
+ * explicit `next` when the header is absent.
+ */
 export async function requireUser(next?: string): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) {
-    redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
+    const headerNext = (await headers()).get("x-prolib-path");
+    const target = headerNext ?? next;
+    redirect(target ? `/login?next=${encodeURIComponent(target)}` : "/login");
   }
   return user;
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { SignupForm } from "@/components/auth/AuthForms";
 import { Eyebrow } from "@/components/ui/Tag";
 import { getCurrentUser } from "@/lib/auth/session";
+import { safeNextPath } from "@/lib/auth/validation";
 import { first } from "@/lib/data/filters";
 import { getDepartments } from "@/lib/data/taxonomy";
 
@@ -18,10 +19,16 @@ export default async function SignupPage({
   searchParams,
 }: PageProps<"/signup">) {
   const params = await searchParams;
-  const user = await getCurrentUser();
-  if (user) redirect(user.role === "admin" ? "/admin" : "/dashboard");
-
   const next = first(params.next);
+  const user = await getCurrentUser();
+  if (user) {
+    // Signed-in already? Leave — but honour ?next= (never back into an
+    // auth screen, which would loop).
+    const fallback = user.role === "admin" ? "/admin" : "/dashboard";
+    const target = safeNextPath(next, fallback);
+    redirect(target === "/login" || target === "/signup" ? fallback : target);
+  }
+
   const departments = await getDepartments();
 
   return (

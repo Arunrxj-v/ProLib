@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/Panel";
 import { Eyebrow } from "@/components/ui/Tag";
 import { isGoogleAuthEnabled } from "@/lib/auth/google";
 import { getCurrentUser } from "@/lib/auth/session";
+import { safeNextPath } from "@/lib/auth/validation";
 import { first } from "@/lib/data/filters";
 
 export const metadata: Metadata = {
@@ -18,10 +19,15 @@ export default async function LoginPage({
   searchParams,
 }: PageProps<"/login">) {
   const params = await searchParams;
-  const user = await getCurrentUser();
-  if (user) redirect(user.role === "admin" ? "/admin" : "/dashboard");
-
   const next = first(params.next);
+  const user = await getCurrentUser();
+  if (user) {
+    // A genuinely signed-in visitor (session row verified) skips the form —
+    // but honours ?next= so "Add Project → login → create page" completes.
+    const fallback = user.role === "admin" ? "/admin" : "/dashboard";
+    const target = safeNextPath(next, fallback);
+    redirect(target === "/login" || target === "/signup" ? fallback : target);
+  }
   const verified = first(params.verified) === "1";
   const denied = first(params.denied) === "1";
   const oauthError = first(params.error);
