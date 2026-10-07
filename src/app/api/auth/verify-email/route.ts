@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const params = new URLSearchParams({ status });
     if (rawNext) params.set("next", rawNext);
     // absoluteUrl (APP_URL) — request.url's origin is the internal bind
-    // address, and the public origin lives under the /prolib base path.
+    // address behind the proxy, never the public one.
     return NextResponse.redirect(
       absoluteUrl(`/verify-email?${params.toString()}`),
       303,

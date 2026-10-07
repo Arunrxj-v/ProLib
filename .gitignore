@@ -45,8 +45,9 @@ next-env.d.ts
 .env.local
 .env*.local
 !.env.example
-# .env.production holds only the public deployment URLs (no secrets) and
-# must ship with the code so `next build` knows the public origin.
+# .env.production holds only public deployment configuration (public URLs,
+# From: header — no secrets) and must ship with the code so `next build`
+# knows the public origin.
 !.env.production
 
 # local database + uploaded files

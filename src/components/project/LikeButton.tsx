@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Icon } from "@/components/ui/Icon";
-import { withBase } from "@/lib/base-path";
 import { cn, compactNumber } from "@/lib/utils";
 
 /**
@@ -40,7 +39,7 @@ export function LikeButton({
     startTransition(async () => {
       try {
         const response = await fetch(
-          withBase(`/api/projects/${encodeURIComponent(slug)}/like`),
+          `/api/projects/${encodeURIComponent(slug)}/like`,
           { method: "POST" },
         );
 

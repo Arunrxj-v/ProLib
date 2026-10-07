@@ -13,7 +13,6 @@ import { Icon } from "@/components/ui/Icon";
 import { Pagination } from "@/components/ui/Navigation";
 import { EmptyState } from "@/components/ui/Panel";
 import { Eyebrow } from "@/components/ui/Tag";
-import { withBase } from "@/lib/base-path";
 import { SITE } from "@/lib/constants";
 import { flattenParams, parseProjectQuery } from "@/lib/data/filters";
 import { listProjects } from "@/lib/data/projects";
@@ -91,7 +90,7 @@ export default async function ExplorePage({
           </div>
 
           {/* One GET form owns search + filters: works with JavaScript off. */}
-          <form method="get" action={withBase("/explore")} className="mt-7">
+          <form method="get" action="/explore" className="mt-7">
             {/* A search submit must not silently drop an active sort. */}
             {query.sort && (
               <input type="hidden" name="sort" value={query.sort} />

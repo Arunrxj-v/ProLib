@@ -50,7 +50,7 @@ async function sendViaResend(input: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM ?? `${SITE.name} <no-reply@prolib.edu>`,
+        from: process.env.EMAIL_FROM || `${SITE.name} <noreply@onlyme.tech>`,
         to: [input.to],
         subject: input.subject,
         text: input.text,

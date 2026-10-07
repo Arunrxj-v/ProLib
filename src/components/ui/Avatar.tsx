@@ -1,6 +1,5 @@
 import Image from "next/image";
 
-import { withBase } from "@/lib/base-path";
 import { avatarTone, cn, initials } from "@/lib/utils";
 
 const TONE_CLASS = {
@@ -47,7 +46,7 @@ export function Avatar({
     <span className={cn("relative inline-flex shrink-0", className)}>
       {src ? (
         <Image
-          src={withBase(src)}
+          src={src}
           alt={`${name}'s profile picture`}
           width={size === "xl" ? 80 : size === "lg" ? 48 : size === "md" ? 40 : 28}
           height={size === "xl" ? 80 : size === "lg" ? 48 : size === "md" ? 40 : 28}

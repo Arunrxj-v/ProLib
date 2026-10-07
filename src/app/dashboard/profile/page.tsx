@@ -8,7 +8,6 @@ import { Icon } from "@/components/ui/Icon";
 import { Alert, Panel, PanelHeader } from "@/components/ui/Panel";
 import { Eyebrow } from "@/components/ui/Tag";
 import { requireUser } from "@/lib/auth/guards";
-import { withBase } from "@/lib/base-path";
 import { getMySocials, getProfileChecks } from "@/lib/data/myProjects";
 import { getDepartments } from "@/lib/data/taxonomy";
 import { getGithubIdentity, githubOAuthConfig } from "@/lib/github";
@@ -208,7 +207,7 @@ export default async function ProfilePage({
                       Open GitHub
                     </a>
                     <a
-                      href={withBase("/api/github/connect")}
+                      href="/api/github/connect"
                       className="inline-flex items-center gap-1.5 rounded-md border border-gh-border bg-gh-inset px-3 py-2 text-xs font-medium text-gh-fg-muted transition-colors hover:text-gh-fg-default"
                     >
                       <Icon name="sync" size={16} />
@@ -224,7 +223,7 @@ export default async function ProfilePage({
                     stored.
                   </p>
                   <a
-                    href={withBase("/api/github/connect")}
+                    href="/api/github/connect"
                     className="inline-flex items-center gap-1.5 rounded-md border border-[rgba(240,246,252,0.1)] bg-gh-btn-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-gh-btn-primary-hover"
                   >
                     <Icon name="code" size={16} />

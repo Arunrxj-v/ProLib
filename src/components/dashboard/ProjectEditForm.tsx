@@ -9,7 +9,6 @@ import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/Form";
 import { Icon } from "@/components/ui/Icon";
 import { Alert, Panel, PanelHeader } from "@/components/ui/Panel";
 import { Eyebrow } from "@/components/ui/Tag";
-import { withBase } from "@/lib/base-path";
 import type { MyProjectDetail } from "@/lib/data/myProjects";
 import { PROJECT_TYPES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -313,7 +312,7 @@ export function ProjectEditForm({
           <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-md border border-gh-border bg-gh-inset sm:w-56">
             {project.coverImage ? (
               <Image
-                src={withBase(project.coverImage)}
+                src={project.coverImage}
                 alt=""
                 fill
                 sizes="224px"

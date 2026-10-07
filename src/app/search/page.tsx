@@ -9,7 +9,6 @@ import { Icon } from "@/components/ui/Icon";
 import { Pagination } from "@/components/ui/Navigation";
 import { EmptyState } from "@/components/ui/Panel";
 import { Eyebrow, TechTag } from "@/components/ui/Tag";
-import { withBase } from "@/lib/base-path";
 import { PAGE_SIZE } from "@/lib/constants";
 import { first, flattenParams } from "@/lib/data/filters";
 import { listProjects } from "@/lib/data/projects";
@@ -51,7 +50,7 @@ export default async function SearchPage({
 
           <form
             method="get"
-            action={withBase("/search")}
+            action="/search"
             className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center"
           >
             <SearchInput

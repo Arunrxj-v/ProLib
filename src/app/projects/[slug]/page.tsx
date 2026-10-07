@@ -12,7 +12,6 @@ import { LinkButton } from "@/components/ui/Button";
 import { Alert, EmptyState } from "@/components/ui/Panel";
 import { Badge, Eyebrow, TechTag } from "@/components/ui/Tag";
 import { getCurrentUser } from "@/lib/auth/session";
-import { withBase } from "@/lib/base-path";
 import {
   LIFECYCLE_STATUSES,
   PROJECT_SECTION_KEYS,
@@ -96,8 +95,6 @@ export async function generateMetadata({
       title: project.title,
       description,
       type: "article",
-      // No withBase here: metadata resolution posix-joins these paths onto
-      // metadataBase's pathname, which already carries /prolib in production.
       images: project.coverImage ? [{ url: project.coverImage }] : undefined,
     },
     alternates: { canonical: `/projects/${project.slug}` },
@@ -367,7 +364,7 @@ export default async function ProjectPage({
             {project.coverImage && (
               <figure className="relative aspect-[16/7] w-full overflow-hidden rounded-lg border border-gh-border bg-gh-inset">
                 <Image
-                  src={withBase(project.coverImage)}
+                  src={project.coverImage}
                   alt={`Cover artwork for ${project.title}`}
                   fill
                   priority
@@ -418,14 +415,14 @@ export default async function ProjectPage({
                 {images.slice(0, 8).map((image) => (
                   <a
                     key={image.id}
-                    href={withBase(image.path)}
+                    href={image.path}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group relative block aspect-[16/10] overflow-hidden rounded-md border border-gh-border bg-gh-inset"
                     aria-label={image.alt ?? `Open image for ${project.title}`}
                   >
                     <Image
-                      src={withBase(image.path)}
+                      src={image.path}
                       alt={image.alt ?? `${project.title} screenshot`}
                       fill
                       sizes="(max-width: 640px) 50vw, 25vw"

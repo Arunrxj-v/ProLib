@@ -1,7 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { withBase } from "@/lib/base-path";
-
 /**
  * Cookie-presence guard for the two signed-in areas of the site.
  *
@@ -16,9 +14,7 @@ const SESSION_COOKIE = "prolib_session";
 
 /** Same-origin path only — a crafted `?next=` must never bounce off-site. */
 function loginUrl(request: NextRequest): URL {
-  // withBase keeps the Location under the production /prolib mount; in
-  // development (basePath "") it is a no-op.
-  const url = new URL(withBase("/login"), request.nextUrl);
+  const url = new URL("/login", request.nextUrl);
   url.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
   return url;
 }

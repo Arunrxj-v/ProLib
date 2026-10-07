@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { hashToken } from "@/lib/auth/tokens";
-import { withBase } from "@/lib/base-path";
 import {
   GITHUB_STATE_COOKIE,
   GithubError,
@@ -64,9 +63,7 @@ function signInFirst(): NextResponse {
       "<p>GitHub sent you back here, but this browser has no active ProLib",
       "session, so there is no account to connect GitHub to. ProLib never",
       "creates an account from GitHub data — sign in and connect again.</p>",
-      '<a href="' +
-        withBase("/login?next=%2Fdashboard%2Fprofile") +
-        '">Sign in to ProLib</a>',
+      '<a href="/login?next=%2Fdashboard%2Fprofile">Sign in to ProLib</a>',
       "</main></body></html>",
     ].join("\n"),
     { status: 401, headers: { "Content-Type": "text/html; charset=utf-8" } },

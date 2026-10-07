@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Alert, EmptyState } from "@/components/ui/Panel";
-import { withBase } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 
 type ImageRow = { id: string; path: string; alt: string | null };
@@ -59,7 +58,7 @@ export function GalleryEditor({
             >
               <div className="relative aspect-video">
                 <Image
-                  src={withBase(image.path)}
+                  src={image.path}
                   alt={image.alt ?? `${title} screenshot`}
                   fill
                   sizes="(max-width: 640px) 50vw, 220px"
@@ -73,7 +72,7 @@ export function GalleryEditor({
               >
                 <input type="hidden" name="imageId" value={image.id} />
                 <Link
-                  href={withBase(image.path)}
+                  href={image.path}
                   className="truncate font-mono text-[10px] text-gh-fg-subtle hover:text-gh-accent"
                 >
                   Open

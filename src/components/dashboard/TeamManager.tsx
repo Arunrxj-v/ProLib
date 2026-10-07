@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/Button";
 import { Field, Input } from "@/components/ui/Form";
 import { Icon } from "@/components/ui/Icon";
 import { Alert, EmptyState, Panel, PanelHeader } from "@/components/ui/Panel";
-import { withBase } from "@/lib/base-path";
 import type { StudentSearchHit } from "@/lib/data/students";
 
 type Member = {
@@ -58,7 +57,7 @@ export function TeamManager({
     const controller = new AbortController();
 
     if (!term) {
-      fetch(withBase("/api/students?q="), { signal: controller.signal })
+      fetch("/api/students?q=", { signal: controller.signal })
         .then((response) => (response.ok ? response.json() : null))
         .then((data) => {
           if (data && typeof data.directoryCount === "number") {
@@ -70,7 +69,7 @@ export function TeamManager({
     }
 
     const timer = setTimeout(() => {
-      fetch(withBase(`/api/students?q=${encodeURIComponent(term)}`), {
+      fetch(`/api/students?q=${encodeURIComponent(term)}`, {
         signal: controller.signal,
       })
         .then(async (response) => {

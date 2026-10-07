@@ -12,7 +12,6 @@ import { Badge, Eyebrow } from "@/components/ui/Tag";
 import { TabLinks } from "@/components/ui/Navigation";
 import { PUBLICATION_STATUSES, type ProjectPublicationStatus } from "@/lib/constants";
 import { requireUser } from "@/lib/auth/guards";
-import { withBase } from "@/lib/base-path";
 import { countMyProjects, listMyProjects } from "@/lib/data/myProjects";
 import { isModerationEnabled } from "@/lib/settings";
 import { flattenParams, first } from "@/lib/data/filters";
@@ -133,7 +132,7 @@ export default async function MyProjectsPage({
                   <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-md border border-gh-border bg-gh-inset sm:h-20 sm:w-36">
                     {project.coverImage ? (
                       <Image
-                        src={withBase(project.coverImage)}
+                        src={project.coverImage}
                         alt=""
                         fill
                         sizes="(max-width: 640px) 100vw, 144px"

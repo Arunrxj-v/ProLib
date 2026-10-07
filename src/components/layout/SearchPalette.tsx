@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Panel";
-import { withBase } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 
 type Hit = { title: string; subtitle: string; href: string };
@@ -53,12 +52,9 @@ function PalettePanel({ onClose }: { onClose: () => void }) {
     setError(null);
 
     try {
-      const response = await fetch(
-        withBase(`/api/search?q=${encodeURIComponent(value)}`),
-        {
-          signal: controller.signal,
-        },
-      );
+      const response = await fetch(`/api/search?q=${encodeURIComponent(value)}`, {
+        signal: controller.signal,
+      });
       if (!response.ok) throw new Error(`Search failed (${response.status})`);
       const data = (await response.json()) as Preview;
       setPreview(data);

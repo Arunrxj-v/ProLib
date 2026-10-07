@@ -41,7 +41,8 @@ services:
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
-      EMAIL_FROM: ${EMAIL_FROM:-}
+      # Public From: header; the Resend key itself comes from the deploy env.
+      EMAIL_FROM: "${EMAIL_FROM:-ProLib <noreply@onlyme.tech>}"
       NODE_ENV: production
     ports:
       - "${APP_PORT:-3000}:3000"

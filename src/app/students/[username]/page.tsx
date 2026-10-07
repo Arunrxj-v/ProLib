@@ -39,7 +39,6 @@ export async function generateMetadata({
   return {
     title: `${student.name} (@${student.username ?? username})`,
     description,
-    // No withBase: resolved by posix-joining onto metadataBase's /prolib path.
     alternates: { canonical: `/students/${student.username ?? username}` },
   };
 }

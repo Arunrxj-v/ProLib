@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 function fail(code: string) {
   // absoluteUrl (APP_URL) — request.url's origin is the internal bind
-  // address, and the public origin lives under the /prolib base path.
+  // address behind the proxy, never the public one.
   return NextResponse.redirect(absoluteUrl(`/login?error=${code}`));
 }
 
