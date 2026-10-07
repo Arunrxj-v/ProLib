@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Pagination } from "@/components/ui/Navigation";
 import { EmptyState, Skeleton } from "@/components/ui/Panel";
 import { Eyebrow } from "@/components/ui/Tag";
+import { withBase } from "@/lib/base-path";
 import { flattenParams, first, withoutKey } from "@/lib/data/filters";
 import { listStudents } from "@/lib/data/students";
 import { getDepartments } from "@/lib/data/taxonomy";
@@ -214,7 +215,7 @@ export default async function StudentsPage({
 
           <form
             method="get"
-            action="/students"
+            action={withBase("/students")}
             className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-end"
           >
             <Field

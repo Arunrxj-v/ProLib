@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, TechTag } from "@/components/ui/Tag";
 import { Icon } from "@/components/ui/Icon";
+import { withBase } from "@/lib/base-path";
 import type { ProjectCardData } from "@/lib/data/projects";
 import { LIFECYCLE_STATUSES, PROJECT_TYPES } from "@/lib/constants";
 import { cn, compactNumber } from "@/lib/utils";
@@ -60,7 +61,7 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
       >
         {project.coverImage ? (
           <Image
-            src={project.coverImage}
+            src={withBase(project.coverImage)}
             alt={`Cover screenshot of ${project.title}`}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

@@ -7,6 +7,7 @@ import { Badge, Eyebrow, TechTag } from "@/components/ui/Tag";
 import { Icon } from "@/components/ui/Icon";
 import { EmptyState } from "@/components/ui/Panel";
 import { LinkButton } from "@/components/ui/Button";
+import { withBase } from "@/lib/base-path";
 import type { ProjectCardData } from "@/lib/data/projects";
 import { getSpotlightProjects } from "@/lib/data/projects";
 import { PROJECT_TYPES } from "@/lib/constants";
@@ -60,7 +61,7 @@ function SpotlightLead({ project }: { project: ProjectCardData }) {
         <div className="relative mb-6 h-56 w-full overflow-hidden rounded-md border border-gh-border bg-gh-inset">
           {project.coverImage ? (
             <Image
-              src={project.coverImage}
+              src={withBase(project.coverImage)}
               alt={`Preview of ${project.title}`}
               fill
               sizes="(max-width: 1024px) 100vw, 58vw"

@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { buildGoogleAuthUrl, isGoogleAuthEnabled } from "@/lib/auth/google";
 import { generateToken } from "@/lib/auth/tokens";
 import { safeNextPath } from "@/lib/auth/validation";
+import { absoluteUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   if (!isGoogleAuthEnabled()) {
     return NextResponse.redirect(
-      new URL("/login?error=google_disabled", request.url),
+      absoluteUrl("/login?error=google_disabled"),
     );
   }
 

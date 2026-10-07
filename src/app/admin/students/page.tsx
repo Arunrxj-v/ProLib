@@ -11,6 +11,7 @@ import { Pagination, TabLinks } from "@/components/ui/Navigation";
 import { EmptyState } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Tag";
 import { requireAdmin } from "@/lib/auth/guards";
+import { withBase } from "@/lib/base-path";
 import { listAdminStudents } from "@/lib/data/admin";
 import { first, flattenParams } from "@/lib/data/filters";
 import { formatDate } from "@/lib/utils";
@@ -92,7 +93,7 @@ export default async function AdminStudentsPage({
       />
 
       <div className="space-y-4">
-        <form method="get" action="/admin/students">
+        <form method="get" action={withBase("/admin/students")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <SearchInput
               name="q"

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Icon } from "@/components/ui/Icon";
 import { Input } from "@/components/ui/Form";
+import { withBase } from "@/lib/base-path";
 
 type Status = {
   configured: boolean;
@@ -60,7 +61,7 @@ export function GithubRepoPicker({
   const selected = selectedMatch ? selectedMatch[1] + "/" + selectedMatch[2] : null;
 
   const checkStatus = useCallback(() => {
-    fetch("/api/github/status")
+    fetch(withBase("/api/github/status"))
       .then((response) => {
         if (!response.ok) throw new Error(`status ${response.status}`);
         return response.json();
@@ -90,7 +91,7 @@ export function GithubRepoPicker({
 
     const timer = setTimeout(() => {
       setSearching(true);
-      fetch(`/api/github/repos?q=${encodeURIComponent(term)}`, {
+      fetch(withBase(`/api/github/repos?q=${encodeURIComponent(term)}`), {
         signal: controller.signal,
       })
         .then(async (response) => {

@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Pagination, TabLinks } from "@/components/ui/Navigation";
 import { EmptyState, Panel, PanelHeader } from "@/components/ui/Panel";
 import { Badge } from "@/components/ui/Tag";
+import { withBase } from "@/lib/base-path";
 import { PUBLICATION_STATUSES, type ProjectPublicationStatus } from "@/lib/constants";
 import { requireAdmin } from "@/lib/auth/guards";
 import {
@@ -90,7 +91,7 @@ export default async function AdminProjectsPage({
       />
 
       <div className="space-y-4">
-        <form method="get" action="/admin/projects">
+        <form method="get" action={withBase("/admin/projects")}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <SearchInput
               name="q"

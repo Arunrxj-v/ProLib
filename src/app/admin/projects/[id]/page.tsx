@@ -12,6 +12,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Alert, EmptyState, Panel, PanelHeader } from "@/components/ui/Panel";
 import { Badge, TechTag } from "@/components/ui/Tag";
 import { requireAdmin } from "@/lib/auth/guards";
+import { withBase } from "@/lib/base-path";
 import {
   LIFECYCLE_STATUSES,
   PROJECT_SECTION_KEYS,
@@ -346,7 +347,7 @@ export default async function AdminProjectDetailPage({
                     className="relative aspect-[16/10] overflow-hidden rounded-md border border-gh-border bg-gh-inset"
                   >
                     <Image
-                      src={image.path}
+                      src={withBase(image.path)}
                       alt={image.alt ?? `${project.title} screenshot`}
                       fill
                       sizes="(max-width: 640px) 50vw, 240px"

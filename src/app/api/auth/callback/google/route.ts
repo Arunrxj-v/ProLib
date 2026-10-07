@@ -9,11 +9,14 @@ import { safeNextPath } from "@/lib/auth/validation";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { isEmailDomainAllowed, isEmailVerificationRequired } from "@/lib/settings";
+import { absoluteUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-function fail(request: NextRequest, code: string) {
-  return NextResponse.redirect(new URL(`/login?error=${code}`, request.url));
+function fail(code: string) {
+  // absoluteUrl (APP_URL) — request.url's origin is the internal bind
+  // address, and the public origin lives under the /prolib base path.
+  return NextResponse.redirect(absoluteUrl(`/login?error=${code}`));
 }
 
 function sameValue(a: string | undefined, b: string | undefined) {
@@ -27,7 +30,7 @@ function sameValue(a: string | undefined, b: string | undefined) {
  * nothing about the provider is simulated when credentials are missing.
  */
 export async function GET(request: NextRequest) {
-  if (!isGoogleAuthEnabled()) return fail(request, "google_disabled");
+  if (!isGoogleAuthEnabled()) return fail("google_disabled");
 
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
@@ -38,15 +41,15 @@ export async function GET(request: NextRequest) {
   );
 
   if (!code || !sameValue(state ?? undefined, cookieState)) {
-    return fail(request, "state");
+    return fail("state");
   }
 
   const profile = await exchangeGoogleCode(code);
-  if (!profile) return fail(request, "provider");
-  if (!profile.emailVerified) return fail(request, "unverified_google");
+  if (!profile) return fail("provider");
+  if (!profile.emailVerified) return fail("unverified_google");
 
   if (!(await isEmailDomainAllowed(profile.email))) {
-    return fail(request, "domain");
+    return fail("domain");
   }
 
   const existing = await db
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
   let userId: string;
 
   if (existing[0]) {
-    if (existing[0].status === "suspended") return fail(request, "suspended");
+    if (existing[0].status === "suspended") return fail("suspended");
     userId = existing[0].id;
     // This route only runs when Google reports the address as verified
     // (line above), so Google has proven control of the same email the
@@ -112,7 +115,7 @@ export async function GET(request: NextRequest) {
     userAgent: request.headers.get("user-agent"),
   });
 
-  const response = NextResponse.redirect(new URL(next, request.url));
+  const response = NextResponse.redirect(absoluteUrl(next));
   response.cookies.delete("prolib_oauth_state");
   response.cookies.delete("prolib_oauth_next");
   return response;

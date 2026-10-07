@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { generateToken } from "@/lib/auth/tokens";
@@ -9,6 +9,7 @@ import {
   githubOAuthUrl,
   packGithubState,
 } from "@/lib/github";
+import { absoluteUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -21,12 +22,12 @@ export const dynamic = "force-dynamic";
  *
  * The redirect URI comes from GITHUB_CALLBACK_URL when set — it must equal
  * the Authorization callback URL registered on the OAuth App exactly (single
- * path: /api/github/callback, no trailing slash). When unset it falls back to
- * the request origin + /api/github/callback, so any deployment host works
- * without a hardcoded localhost (local dev resolves to
+ * path: /api/github/callback, no trailing slash). When unset it falls back
+ * to the public app URL (APP_URL) + /api/github/callback, so any deployment
+ * host works without a hardcoded localhost (local dev resolves to
  * http://localhost:3000/api/github/callback).
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json(
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
   const state = generateToken();
   const redirectUri =
     process.env.GITHUB_CALLBACK_URL?.trim() ||
-    `${request.nextUrl.origin}/api/github/callback`;
+    absoluteUrl("/api/github/callback");
   const response = NextResponse.redirect(
     new URL(githubOAuthUrl(state, redirectUri)),
     302,

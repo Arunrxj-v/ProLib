@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth/verification";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { absoluteUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +31,10 @@ export async function GET(request: NextRequest) {
   const go = (status: string) => {
     const params = new URLSearchParams({ status });
     if (rawNext) params.set("next", rawNext);
+    // absoluteUrl (APP_URL) — request.url's origin is the internal bind
+    // address, and the public origin lives under the /prolib base path.
     return NextResponse.redirect(
-      new URL(`/verify-email?${params.toString()}`, request.url),
+      absoluteUrl(`/verify-email?${params.toString()}`),
       303,
     );
   };

@@ -7,6 +7,8 @@
 
 import { z } from "zod";
 
+import { BASE_PATH } from "@/lib/base-path";
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const USERNAME_PATTERN = /^[a-z0-9_]+$/i;
 
@@ -119,8 +121,14 @@ export function safeNextPath(
   fallback: string,
 ): string {
   if (!raw) return fallback;
-  const value = raw.trim();
+  let value = raw.trim();
   if (!value.startsWith("/")) return fallback;
+  // The deployment base path is re-applied downstream by redirect() and the
+  // router, so a value that already carries it is trimmed here to never
+  // double it (no-op in development, where BASE_PATH is "").
+  if (BASE_PATH && (value === BASE_PATH || value.startsWith(`${BASE_PATH}/`))) {
+    value = value.slice(BASE_PATH.length) || "/";
+  }
   if (value.startsWith("//") || value.startsWith("/\\")) return fallback;
   if (/[\s<>"'\\]/.test(value)) return fallback;
   return value;

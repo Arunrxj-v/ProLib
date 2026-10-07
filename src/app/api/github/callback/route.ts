@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { hashToken } from "@/lib/auth/tokens";
+import { withBase } from "@/lib/base-path";
 import {
   GITHUB_STATE_COOKIE,
   GithubError,
@@ -11,6 +12,7 @@ import {
   unpackGithubState,
   upsertGithubAccount,
 } from "@/lib/github";
+import { absoluteUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +64,9 @@ function signInFirst(): NextResponse {
       "<p>GitHub sent you back here, but this browser has no active ProLib",
       "session, so there is no account to connect GitHub to. ProLib never",
       "creates an account from GitHub data — sign in and connect again.</p>",
-      '<a href="/login?next=%2Fdashboard%2Fprofile">Sign in to ProLib</a>',
+      '<a href="' +
+        withBase("/login?next=%2Fdashboard%2Fprofile") +
+        '">Sign in to ProLib</a>',
       "</main></body></html>",
     ].join("\n"),
     { status: 401, headers: { "Content-Type": "text/html; charset=utf-8" } },
@@ -82,7 +86,7 @@ function signInFirst(): NextResponse {
 export async function GET(request: NextRequest) {
   const fail = (reason: string) => {
     const response = NextResponse.redirect(
-      new URL(`/dashboard/profile?github=error&reason=${encodeURIComponent(reason)}`, request.url),
+      absoluteUrl(`/dashboard/profile?github=error&reason=${encodeURIComponent(reason)}`),
       302,
     );
     response.cookies.delete(GITHUB_STATE_COOKIE);
@@ -91,7 +95,7 @@ export async function GET(request: NextRequest) {
 
   const succeed = () => {
     const response = NextResponse.redirect(
-      new URL("/dashboard/profile?github=connected", request.url),
+      absoluteUrl("/dashboard/profile?github=connected"),
       302,
     );
     response.cookies.delete(GITHUB_STATE_COOKIE);
@@ -124,7 +128,7 @@ export async function GET(request: NextRequest) {
 
   const redirectUri =
     process.env.GITHUB_CALLBACK_URL?.trim() ||
-    `${request.nextUrl.origin}/api/github/callback`;
+    absoluteUrl("/api/github/callback");
 
   let accessToken: string;
   try {

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { withBase } from "@/lib/base-path";
+
 /**
  * Fires exactly one view event per mounted project page.
  *
@@ -18,7 +20,9 @@ export function ViewBeacon({ slug }: { slug: string }) {
     if (lastSlug.current === slug) return;
     lastSlug.current = slug;
 
-    const url = `/api/projects/${encodeURIComponent(slug)}/view`;
+    const url = withBase(
+      `/api/projects/${encodeURIComponent(slug)}/view`,
+    );
     try {
       if (navigator.sendBeacon) {
         const payload = new Blob([JSON.stringify({})], {
