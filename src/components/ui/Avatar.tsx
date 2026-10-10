@@ -1,5 +1,9 @@
-import Image from "next/image";
+"use client";
 
+import Image from "next/image";
+import { useState } from "react";
+
+import { isRenderableImageSrc } from "@/lib/imageHosts";
 import { avatarTone, cn, initials } from "@/lib/utils";
 
 const TONE_CLASS = {
@@ -31,6 +35,13 @@ export type AvatarProps = {
 /**
  * Profile photo when one exists, otherwise deterministic initials on an
  * accent surface — never an empty circle.
+ *
+ * Renders only srcs next/image can actually serve (same-origin /uploads/…
+ * or the allowlisted Google host — see src/lib/imageHosts.ts). A malformed,
+ * disallowed, or unavailable URL degrades to the same initials fallback
+ * instead of crashing the page: next/image throws during render for an
+ * unconfigured hostname, and the browser's onError covers 404s/network
+ * failures after hydration.
  */
 export function Avatar({
   name,
@@ -41,12 +52,16 @@ export function Avatar({
   priority,
 }: AvatarProps) {
   const tone = TONE_CLASS[avatarTone(name)];
+  const [failed, setFailed] = useState(false);
+
+  const candidate = typeof src === "string" ? src.trim() : "";
+  const showImage = Boolean(candidate) && !failed && isRenderableImageSrc(candidate);
 
   return (
     <span className={cn("relative inline-flex shrink-0", className)}>
-      {src ? (
+      {showImage ? (
         <Image
-          src={src}
+          src={candidate}
           alt={`${name}'s profile picture`}
           width={size === "xl" ? 80 : size === "lg" ? 48 : size === "md" ? 40 : 28}
           height={size === "xl" ? 80 : size === "lg" ? 48 : size === "md" ? 40 : 28}
@@ -55,6 +70,7 @@ export function Avatar({
             SIZES[size],
           )}
           priority={priority}
+          onError={() => setFailed(true)}
         />
       ) : (
         <span
