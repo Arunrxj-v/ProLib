@@ -18,7 +18,10 @@ What it does:
 Scenarios:
   T0  forged OAuth state           → rejected, no user/session
   T1  allowed college email        → session + verified user created
+  T1b real student address         → chn23cse474@<college> allowed
+  T1c second verified @college     → allowed, distinct user, no merge
   T2  non-college Gmail            → rejected, exact error copy, no row
+  T2b misspelled domain            → ceconlione.edu-style typo rejected
   T3  non-college domain/outlook   → rejected, no row
   T3b Google-unverified address    → rejected even on the college domain
   T4  existing password user       → Google links to the same user, no duplicate
@@ -76,6 +79,31 @@ PROFILES = {
         "verified": True,
         "name": "New Student",
         "hd": ALLOWED_DOMAIN,
+    },
+    # The real production student address (incident 2026-10-11: the config
+    # misspelled the domain as "ceconlione.edu", which has no DNS at all).
+    "chn-code": {
+        "sub": "g-oauth-1011",
+        "email": f"chn23cse474@{ALLOWED_DOMAIN}",
+        "verified": True,
+        "name": "CHN Student",
+        "hd": ALLOWED_DOMAIN,
+    },
+    # A second, distinct verified account on the same college domain.
+    "classmate-code": {
+        "sub": "g-oauth-1012",
+        "email": f"meera23ece018@{ALLOWED_DOMAIN}",
+        "verified": True,
+        "name": "Meera P",
+        "hd": ALLOWED_DOMAIN,
+    },
+    # The misspelled domain from the incident — NOT the college domain, so a
+    # verified address there must be rejected exactly like any Gmail.
+    "typo-domain-code": {
+        "sub": "g-oauth-1013",
+        "email": "chn23cse474@ceconlione.edu",
+        "verified": True,
+        "name": "Typo Domain",
     },
     "gmail-code": {
         "sub": "g-oauth-1002",
@@ -581,6 +609,89 @@ def t1_allowed_college_email():
     return session, rows[0]["id"]
 
 
+def t1b_real_student_address():
+    print("== T1b real student address chn23cse474@college → allowed")
+    state, cookies = google_start()
+    status, hdrs, _ = google_callback("chn-code", state, cookies)
+    loc = location(hdrs)
+    ok("T1b redirect to /dashboard", loc == "/dashboard", (status, loc))
+    session = session_of(hdrs)
+    ok("T1b session cookie set", bool(session), hdrs)
+
+    status, payload, _, _ = api("GET", "/api/auth/me", cookie=session)
+    ok("T1b authenticated", payload.get("authenticated") is True, payload)
+    ok(
+        "T1b exact student address stored",
+        payload["user"]["email"] == f"chn23cse474@{ALLOWED_DOMAIN}",
+        payload,
+    )
+    rows = scalar(
+        "select email_verified_at as v from users where email = 'chn23cse474@%s'"
+        % ALLOWED_DOMAIN
+    )
+    ok("T1b one user row", len(rows) == 1, rows)
+    ok("T1b verified immediately", rows[0]["v"] is not None, rows)
+    # Log out so later session-count assertions keep their documented
+    # baseline; the user row persists (asserted again in final_checks).
+    api("POST", "/api/auth/logout", cookie=session)
+
+
+def t1c_second_college_account():
+    print("== T1c second verified @college account → allowed, distinct user")
+    users_before = scalar("select count(*) as n from users")[0]["n"]
+    state, cookies = google_start()
+    status, hdrs, _ = google_callback("classmate-code", state, cookies)
+    loc = location(hdrs)
+    ok("T1c redirect to /dashboard", loc == "/dashboard", (status, loc))
+    session = session_of(hdrs)
+
+    status, payload, _, _ = api("GET", "/api/auth/me", cookie=session)
+    ok("T1c authenticated", payload.get("authenticated") is True, payload)
+    ok(
+        "T1c distinct email, distinct user",
+        payload["user"]["email"] == f"meera23ece018@{ALLOWED_DOMAIN}"
+        and scalar(
+            "select count(*) as n from users where email = 'meera23ece018@%s'"
+            % ALLOWED_DOMAIN
+        )[0]["n"]
+        == 1,
+        payload,
+    )
+    ok(
+        "T1c exactly one new user",
+        scalar("select count(*) as n from users")[0]["n"] == users_before + 1,
+    )
+    api("POST", "/api/auth/logout", cookie=session)
+
+
+def t2b_misspelled_domain_rejected():
+    print("== T2b verified address at the misspelled domain → rejected")
+    users_before = scalar("select count(*) as n from users")[0]["n"]
+    sessions_before = scalar("select count(*) as n from sessions")[0]["n"]
+
+    state, cookies = google_start()
+    status, hdrs, _ = google_callback("typo-domain-code", state, cookies)
+    loc = location(hdrs)
+    ok(
+        "T2b → /login?error=domain",
+        loc == "/login?error=domain",
+        (status, loc),
+    )
+    ok("T2b no session cookie", session_of(hdrs) is None, hdrs)
+    ok(
+        "T2b no user row for the misspelled domain",
+        scalar(
+            "select count(*) as n from users where email like '%@ceconlione.edu'"
+        )[0]["n"]
+        == 0,
+    )
+    ok(
+        "T2b counts unchanged",
+        scalar("select count(*) as n from users")[0]["n"] == users_before
+        and scalar("select count(*) as n from sessions")[0]["n"] == sessions_before,
+    )
+
+
 def t2_gmail_rejected():
     print("== T2 non-college Gmail rejected (frontend email spoof ignored)")
     users_before = scalar("select count(*) as n from users")[0]["n"]
@@ -885,9 +996,12 @@ def ui_google_button():
 
 def final_checks():
     print("== final state")
-    ok("final: 2 users (Google + password)", scalar("select count(*) as n from users")[0]["n"] == 2)
     ok(
-        "final: 2 sessions (T1 + T4; T5's logged out)",
+        "final: 4 users (3 Google + 1 password)",
+        scalar("select count(*) as n from users")[0]["n"] == 4,
+    )
+    ok(
+        "final: 2 sessions (T1 + T4; T5/T1b/T1c/T8 logged out)",
         scalar("select count(*) as n from sessions")[0]["n"] == 2,
     )
     ok(
@@ -935,7 +1049,10 @@ def main():
 
         t0_state_csrf()
         session_a, user_a = t1_allowed_college_email()
+        t1b_real_student_address()
+        t1c_second_college_account()
         t2_gmail_rejected()
+        t2b_misspelled_domain_rejected()
         t3_non_college_domain_rejected()
         t3b_unverified_google_account_rejected()
         _, users_before = t4_existing_user_linked()
