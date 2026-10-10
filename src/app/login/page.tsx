@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { GoogleButton, LoginForm } from "@/components/auth/AuthForms";
+import { GoogleButton, LoginForm, OrDivider } from "@/components/auth/AuthForms";
 import { Alert } from "@/components/ui/Panel";
 import { Eyebrow } from "@/components/ui/Tag";
 import { isGoogleAuthEnabled } from "@/lib/auth/google";
@@ -44,6 +44,10 @@ export default async function LoginPage({
     provider: {
       title: "Google did not return a profile",
       body: "The authorization was declined or expired. Try again, or sign in with your password.",
+    },
+    cancelled: {
+      title: "Google sign-in was cancelled",
+      body: "You stopped before finishing the Google authorization. Nothing was created — try again, or sign in with your password.",
     },
     domain: {
       title: "This college domain is not allowed",
@@ -91,25 +95,13 @@ export default async function LoginPage({
         </div>
 
         <div className={verified || denied || oauth ? "mt-5" : "mt-6"}>
+          <GoogleButton
+            enabled={isGoogleAuthEnabled()}
+            href={`/api/auth/google${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+          />
+          <OrDivider label="Or sign in with email" />
           <LoginForm next={next} />
         </div>
-
-        {isGoogleAuthEnabled() && (
-          <div className="mt-6">
-            <div className="relative my-5 text-center">
-              <span
-                aria-hidden
-                className="absolute inset-x-0 top-1/2 h-px bg-gh-border"
-              />
-              <span className="relative bg-gh-card px-3 font-mono text-[11px] uppercase tracking-wider text-gh-fg-subtle">
-                or
-              </span>
-            </div>
-            <GoogleButton
-              href={`/api/auth/google${next ? `?next=${encodeURIComponent(next)}` : ""}`}
-            />
-          </div>
-        )}
       </div>
 
       <p className="mt-5 text-center text-sm text-gh-fg-muted">

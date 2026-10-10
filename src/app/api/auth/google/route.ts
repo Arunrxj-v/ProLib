@@ -15,7 +15,7 @@ const STATE_MAX_AGE = 600; // seconds
  * The OAuth state is a single-use, httpOnly cookie so the callback can prove
  * the round trip came from this browser. Without GOOGLE_CLIENT_ID /
  * GOOGLE_CLIENT_SECRET in the environment this endpoint refuses to run — the
- * UI hides the button instead of faking a provider.
+ * UI shows the button disabled instead of faking a provider.
  */
 export async function GET(request: NextRequest) {
   const next = safeNextPath(

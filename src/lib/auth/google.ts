@@ -11,7 +11,8 @@ import "server-only";
  *   GOOGLE_CLIENT_SECRET=...
  *   ALLOWED_COLLEGE_EMAIL_DOMAINS=ceconline.edu
  *
- * Without them the sign-in screen simply hides the button — nothing is faked.
+ * Without them the sign-in screens still show the button — visibly disabled,
+ * with a note naming the exact variables — instead of faking a provider.
  *
  * The allowlist is enforced server-side in the callback against the email
  * Google reports as verified; a personal address (gmail.com, outlook.com, …)

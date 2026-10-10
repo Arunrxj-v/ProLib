@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   loginAction,
@@ -116,33 +116,118 @@ function SubmitButton({
   );
 }
 
-/** Real Google sign-in — only rendered when credentials exist in the env. */
-export function GoogleButton({ href }: { href: string }) {
+function GoogleGlyph() {
+  return (
+    <svg aria-hidden width="16" height="16" viewBox="0 0 48 48">
+      <path
+        fill="#FFC107"
+        d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.6l6.2 5.2C36.9 40.2 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Real Google sign-in — links to /api/auth/google, the implemented OAuth
+ * start route (state cookie → Google → callback → domain gate → session).
+ *
+ * Once clicked the label flips to "Redirecting to Google…" and swallows
+ * further clicks, so a double click cannot start two OAuth round trips.
+ *
+ * When the server has no GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET (or no
+ * college allowlist) the button is still shown — visibly disabled, with a
+ * note naming the exact variables — instead of silently disappearing. The
+ * provider is never faked: no credentials, no flow.
+ */
+export function GoogleButton({
+  href,
+  enabled = true,
+}: {
+  href: string;
+  enabled?: boolean;
+}) {
+  const [pending, setPending] = useState(false);
+
+  // Coming Back from Google restores this page from the back/forward cache
+  // with the click state intact — re-arm the button instead of leaving it
+  // stuck on "Redirecting to Google…".
+  useEffect(() => {
+    const rearm = () => setPending(false);
+    window.addEventListener("pageshow", rearm);
+    return () => window.removeEventListener("pageshow", rearm);
+  }, []);
+
+  if (!enabled) {
+    return (
+      <div>
+        <span
+          aria-disabled
+          className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-gh-border bg-gh-btn-bg px-4 py-2.5 text-sm font-medium text-gh-fg-muted opacity-60"
+        >
+          <GoogleGlyph />
+          Continue with Google
+        </span>
+        <p className="mt-2 text-xs leading-relaxed text-gh-fg-subtle">
+          Google sign-in is not configured on this server yet — it needs{" "}
+          <code className="font-mono">GOOGLE_CLIENT_ID</code>,{" "}
+          <code className="font-mono">GOOGLE_CLIENT_SECRET</code> and{" "}
+          <code className="font-mono">ALLOWED_COLLEGE_EMAIL_DOMAINS</code>.
+          Email sign-in below works normally.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <a
       href={href}
-      className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gh-border bg-gh-btn-bg px-4 py-2.5 text-sm font-medium text-gh-fg-default transition-colors hover:bg-gh-btn-hover"
+      aria-busy={pending}
+      onClick={(event) => {
+        if (pending) {
+          event.preventDefault();
+          return;
+        }
+        setPending(true);
+      }}
+      className={cn(
+        "inline-flex w-full items-center justify-center gap-2 rounded-md border border-gh-border bg-gh-btn-bg px-4 py-2.5 text-sm font-medium text-gh-fg-default transition-colors hover:bg-gh-btn-hover",
+        pending && "pointer-events-none opacity-70",
+      )}
     >
-      <svg aria-hidden width="16" height="16" viewBox="0 0 48 48">
-        <path
-          fill="#FFC107"
-          d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.3 6.1 29.4 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.3-.1-2.6-.4-3.9z"
-        />
-        <path
-          fill="#FF3D00"
-          d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.3 6.1 29.4 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
-        />
-        <path
-          fill="#4CAF50"
-          d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"
-        />
-        <path
-          fill="#1976D2"
-          d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.6l6.2 5.2C36.9 40.2 44 35 44 24c0-1.3-.1-2.6-.4-3.9z"
-        />
-      </svg>
-      Continue with Google
+      <GoogleGlyph />
+      {pending ? "Redirecting to Google…" : "Continue with Google"}
     </a>
+  );
+}
+
+/** "─── Or sign in with email ───" separator between OAuth and the form. */
+export function OrDivider({ label }: { label: string }) {
+  return (
+    <div
+      className="relative my-5 text-center"
+      role="separator"
+      aria-label={label}
+    >
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-1/2 h-px bg-gh-border"
+      />
+      <span className="relative bg-gh-card px-3 font-mono text-[11px] uppercase tracking-wider text-gh-fg-subtle">
+        {label}
+      </span>
+    </div>
   );
 }
 

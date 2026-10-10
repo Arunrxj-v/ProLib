@@ -75,8 +75,8 @@ All optional — the app runs fully local with zero configuration. Copy
 | `API_URL` / `FRONTEND_URL` | Optional aliases for server-side absolute URL helpers. |
 | `STORAGE_DIR` (`STORAGE_PATH`) | Root for uploads. Defaults to `./storage` (files land in `storage/uploads/**`). |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | Enables **Connect GitHub** OAuth (dashboard → profile). Register an OAuth App with callback `{APP_URL}/api/github/callback` (or set `GITHUB_CALLBACK_URL`). Without them the UI says "not configured" honestly and the manual repository-URL field keeps working. |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Enables the Google sign-in button (callback `{APP_URL}/api/auth/callback/google`, or `GOOGLE_CALLBACK_URL`). Without them `/api/auth/google` redirects to `/login?error=google_disabled` and the button is hidden. |
-| `ALLOWED_COLLEGE_EMAIL_DOMAINS` | College email domains Google sign-in accepts (comma-separated; this instance: `ceconline.edu`). Required alongside the Google credentials — blank hides the button. The callback checks the **verified Google address** server-side, so personal domains (`gmail.com`, …) get a clear rejection and never create a user or session. Email + password sign-in is unaffected. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Enables the Google sign-in button (callback `{APP_URL}/api/auth/callback/google`, or `GOOGLE_CALLBACK_URL`). Without them `/api/auth/google` redirects to `/login?error=google_disabled` and the button renders disabled on `/login` and `/signup` with a note naming the missing variables. |
+| `ALLOWED_COLLEGE_EMAIL_DOMAINS` | College email domains Google sign-in accepts (comma-separated; this instance: `ceconline.edu`). Required alongside the Google credentials — blank leaves the button disabled. The callback checks the **verified Google address** server-side, so personal domains (`gmail.com`, …) get a clear rejection and never create a user or session. Email + password sign-in is unaffected. |
 | `RESEND_API_KEY` | Enables real verification emails via Resend. |
 | `EMAIL_FROM` | From-header for those emails. |
 

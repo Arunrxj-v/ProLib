@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { SignupForm } from "@/components/auth/AuthForms";
+import { SignupForm, GoogleButton, OrDivider } from "@/components/auth/AuthForms";
 import { Eyebrow } from "@/components/ui/Tag";
+import { isGoogleAuthEnabled } from "@/lib/auth/google";
 import { getCurrentUser } from "@/lib/auth/session";
 import { safeNextPath } from "@/lib/auth/validation";
 import { first } from "@/lib/data/filters";
@@ -45,6 +46,14 @@ export default async function SignupPage({
         </p>
 
         <div className="mt-6">
+          {/* Same OAuth flow as /login — the callback enforces the college
+              domain gate and creates/links the account exactly as the form
+              would; a Google sign-up is never a verification bypass. */}
+          <GoogleButton
+            enabled={isGoogleAuthEnabled()}
+            href={`/api/auth/google${next ? `?next=${encodeURIComponent(next)}` : ""}`}
+          />
+          <OrDivider label="Or create account with email" />
           <SignupForm departments={departments} next={next} />
         </div>
       </div>

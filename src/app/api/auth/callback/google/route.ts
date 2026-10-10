@@ -39,14 +39,24 @@ export async function GET(request: NextRequest) {
 
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
+  // Google reports a user-cancelled authorization as error=access_denied
+  // (with a valid state, no code). Distinguish it from a broken round trip
+  // so the login page can say so plainly.
+  const providerError = request.nextUrl.searchParams.get("error");
   const cookieState = request.cookies.get("prolib_oauth_state")?.value;
   const next = safeNextPath(
     request.cookies.get("prolib_oauth_next")?.value,
     "/dashboard",
   );
 
-  if (!code || !sameValue(state ?? undefined, cookieState)) {
+  if (!sameValue(state ?? undefined, cookieState)) {
     return fail("state");
+  }
+  if (providerError === "access_denied" && !code) {
+    return fail("cancelled");
+  }
+  if (!code) {
+    return fail("provider");
   }
 
   const profile = await exchangeGoogleCode(code);

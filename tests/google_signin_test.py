@@ -24,6 +24,10 @@ Scenarios:
   T4  existing password user       → Google links to the same user, no duplicate
   T5  repeated Google login        → same ProLib user, counts unchanged
   T6  logout                       → that session removed server-side
+  T7  cancelled Google auth        → clear error, no user/session
+  T8  ?next= destination           → preserved through the full round trip
+  T9  hostile ?next= (open redirect) → server-side fallback to /dashboard
+  UI  button on /login + /signup   → real link to /api/auth/google
 """
 import http.client
 import json
@@ -37,7 +41,7 @@ import time
 import uuid
 from html import unescape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, quote, urlencode, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 HOST, PORT = "localhost", 3000
@@ -249,11 +253,15 @@ def location(hdrs):
 
 
 def cookie_map(hdrs):
-    """prolib_* cookies from a joined Set-Cookie header (value → name)."""
+    """prolib_* cookies from a joined Set-Cookie header (value → name).
+
+    Values are percent-decoded — Next.js cookie serialization URL-encodes
+    non-token characters (e.g. a /path becomes %2Fpath).
+    """
     raw = hdrs.get("Set-Cookie") or ""
     out = {}
     for m in re.finditer(r"(prolib_[a-z_]+)=([^;]*)", raw):
-        out.setdefault(m.group(1), m.group(2))
+        out.setdefault(m.group(1), unquote(m.group(2)))
     return out
 
 
@@ -761,6 +769,120 @@ def t6_logout_removes_session(session_a, session_a2):
     ok("T6 other session unaffected", payload.get("authenticated") is True, payload)
 
 
+def t7_cancelled_authorization():
+    print("== T7 cancelled Google authorization → clear error, nothing created")
+    users_before = scalar("select count(*) as n from users")[0]["n"]
+    sessions_before = scalar("select count(*) as n from sessions")[0]["n"]
+
+    state, cookies = google_start()
+    # Google reports a user-cancelled consent as error=access_denied with the
+    # state echoed back and no code — the server must say "cancelled", not
+    # blame the round trip, and must create nothing.
+    header = "; ".join(f"{k}={v}" for k, v in cookies.items() if v)
+    status, hdrs, _ = request(
+        "GET",
+        "/api/auth/callback/google?" + urlencode({"error": "access_denied", "state": state}),
+        headers={"Cookie": header},
+    )
+    loc = location(hdrs)
+    ok(
+        "T7 → /login?error=cancelled",
+        loc == "/login?error=cancelled",
+        (status, loc),
+    )
+    ok("T7 no session cookie", session_of(hdrs) is None, hdrs)
+    ok(
+        "T7 counts unchanged",
+        scalar("select count(*) as n from users")[0]["n"] == users_before
+        and scalar("select count(*) as n from sessions")[0]["n"] == sessions_before,
+    )
+
+    status, _, html = get("/login?error=cancelled")
+    ok("T7 login page renders", status == 200, status)
+    ok(
+        "T7 cancellation copy shown",
+        "Google sign-in was cancelled" in html,
+        "error banner missing",
+    )
+
+
+def t8_destination_preserved():
+    print("== T8 ?next= destination survives the whole round trip")
+    target = "/dashboard/projects/new"
+    state, cookies = google_start(next_path=target)
+    ok(
+        "T8 next stored server-side in the oauth cookie",
+        cookies.get("prolib_oauth_next") == target,
+        cookies,
+    )
+    status, hdrs, _ = google_callback("college-mixed-case", state, cookies)
+    loc = location(hdrs)
+    ok("T8 → original destination", loc == target, (status, loc))
+    session = session_of(hdrs)
+    ok("T8 session cookie set", bool(session), hdrs)
+    # And the session really works at that destination.
+    status, payload, _, _ = api("GET", "/api/auth/me", cookie=session)
+    ok("T8 authenticated", payload.get("authenticated") is True, payload)
+    # Log out so final session counts stay at the documented baseline.
+    api("POST", "/api/auth/logout", cookie=session)
+
+
+def t9_open_redirect_blocked():
+    print("== T9 hostile ?next= (open redirect) blocked server-side")
+    # Absolute / protocol-relative URLs must never survive safeNextPath.
+    for hostile in (
+        "https://evil.example/steal",
+        "//evil.example/steal",
+        "/\\evil.example",
+    ):
+        status, hdrs, _ = request(
+            "GET", "/api/auth/google?next=" + quote(hostile, safe="")
+        )
+        cookies = cookie_map(hdrs)
+        ok(
+            f"T9 {hostile!r} → fallback /dashboard",
+            cookies.get("prolib_oauth_next") == "/dashboard",
+            cookies,
+        )
+    # A relative path is still honoured.
+    _, cookies = google_start(next_path="/dashboard/projects")
+    ok(
+        "T9 relative /dashboard/projects kept",
+        cookies.get("prolib_oauth_next") == "/dashboard/projects",
+        cookies,
+    )
+
+
+def ui_google_button():
+    print("== UI: real Google button on /login and /signup")
+    status, _, html = get("/login")
+    ok("UI /login renders", status == 200, status)
+    ok("UI /login has Continue with Google", "Continue with Google" in html)
+    ok(
+        "UI /login button targets the real OAuth start route",
+        'href="/api/auth/google"' in html,
+        "link missing — button not wired to /api/auth/google",
+    )
+    ok(
+        "UI /login divider above the email form",
+        "Or sign in with email" in html,
+    )
+
+    status, _, html = get("/login?next=%2Fdashboard%2Fprojects%2Fnew")
+    ok(
+        "UI /login carries ?next= into the OAuth link",
+        "next=%2Fdashboard%2Fprojects%2Fnew" in html,
+    )
+
+    status, _, html = get("/signup")
+    ok("UI /signup renders", status == 200, status)
+    ok("UI /signup has Continue with Google", "Continue with Google" in html)
+    ok(
+        "UI /signup button targets the real OAuth start route",
+        'href="/api/auth/google"' in html,
+    )
+
+
 def final_checks():
     print("== final state")
     ok("final: 2 users (Google + password)", scalar("select count(*) as n from users")[0]["n"] == 2)
@@ -809,6 +931,7 @@ def main():
         print(f"starting next dev on :{PORT} (log: {DEV_LOG})")
         DEV_PROC = start_server(GOOGLE_BASE)
         sentinel()
+        ui_google_button()
 
         t0_state_csrf()
         session_a, user_a = t1_allowed_college_email()
@@ -818,6 +941,9 @@ def main():
         _, users_before = t4_existing_user_linked()
         session_a2 = t5_repeated_login_same_user(session_a, user_a, users_before)
         t6_logout_removes_session(session_a, session_a2)
+        t7_cancelled_authorization()
+        t8_destination_preserved()
+        t9_open_redirect_blocked()
         final_checks()
 
         print(f"\nALL {len(_checks)} CHECKS PASSED")
