@@ -10,6 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "create-admin": "tsx src/scripts/create-admin.ts",
+    "test:google": "python3 tests/google_signin_test.py",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

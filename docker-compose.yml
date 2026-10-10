@@ -43,6 +43,9 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       # Public From: header; the Resend key itself comes from the deploy env.
       EMAIL_FROM: "${EMAIL_FROM:-ProLib <noreply@onlyme.tech>}"
+      # College domains Google sign-in accepts (server-side gate; blank in
+      # the host env falls back to this instance's college domain).
+      ALLOWED_COLLEGE_EMAIL_DOMAINS: "${ALLOWED_COLLEGE_EMAIL_DOMAINS:-ceconline.edu}"
       NODE_ENV: production
     ports:
       - "${APP_PORT:-3000}:3000"

@@ -1,7 +1,11 @@
 import { eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { exchangeGoogleCode, isGoogleAuthEnabled } from "@/lib/auth/google";
+import {
+  exchangeGoogleCode,
+  isAllowedCollegeEmail,
+  isGoogleAuthEnabled,
+} from "@/lib/auth/google";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { generateToken, hashToken } from "@/lib/auth/tokens";
@@ -25,9 +29,10 @@ function sameValue(a: string | undefined, b: string | undefined) {
 }
 
 /**
- * Google OAuth callback: state check → code exchange → account upsert →
- * session. Accounts created here are always tied to a real Google email;
- * nothing about the provider is simulated when credentials are missing.
+ * Google OAuth callback: state check → code exchange → college-domain gate →
+ * account upsert → session. Accounts created here are always tied to the
+ * verified Google email from the userinfo response; nothing about the
+ * provider is simulated when credentials are missing.
  */
 export async function GET(request: NextRequest) {
   if (!isGoogleAuthEnabled()) return fail("google_disabled");
@@ -47,6 +52,15 @@ export async function GET(request: NextRequest) {
   const profile = await exchangeGoogleCode(code);
   if (!profile) return fail("provider");
   if (!profile.emailVerified) return fail("unverified_google");
+
+  // College-domain gate — server-side, fail-closed, checked against the
+  // email Google reported as verified (never anything from the browser).
+  // A rejected address creates no user, no session and no link; it happens
+  // before the first database read. The instance's own domain policy still
+  // applies afterwards as a second, independently configurable check.
+  if (!isAllowedCollegeEmail(profile.email)) {
+    return fail("domain");
+  }
 
   if (!(await isEmailDomainAllowed(profile.email))) {
     return fail("domain");

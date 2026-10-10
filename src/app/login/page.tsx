@@ -35,7 +35,7 @@ export default async function LoginPage({
   const OAUTH_ERRORS: Record<string, { title: string; body: string }> = {
     google_disabled: {
       title: "Google sign-in is not configured",
-      body: "This server has no GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET set, so the provider is disabled rather than faked. Sign in with your password instead.",
+      body: "This server has no GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET or ALLOWED_COLLEGE_EMAIL_DOMAINS set, so the provider is disabled rather than faked. Sign in with your password instead.",
     },
     state: {
       title: "Sign-in could not be confirmed",
@@ -47,7 +47,7 @@ export default async function LoginPage({
     },
     domain: {
       title: "This college domain is not allowed",
-      body: "Google signed you in with an address outside the domains configured for this instance.",
+      body: "Only college Google accounts can be used with ProLib.",
     },
     unverified_google: {
       title: "Google account is not verified",
