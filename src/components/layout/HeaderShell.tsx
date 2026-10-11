@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { BrandLink } from "@/components/layout/BrandLogo";
 import { SearchPalette } from "@/components/layout/SearchPalette";
-import { Avatar } from "@/components/ui/Avatar";
+import { AccountMenu } from "@/components/layout/AccountMenu";
+import { signOutOfProLib } from "@/lib/clientAuth";
 import { Icon } from "@/components/ui/Icon";
 import { SITE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 export type HeaderUser = {
   name: string;
   username: string | null;
+  email: string;
   avatarUrl: string | null;
   role: "student" | "admin";
 };
@@ -33,8 +35,17 @@ function isActive(pathname: string, href: string) {
 
 export function HeaderShell({ user }: { user: HeaderUser | null }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [drawerSigningOut, setDrawerSigningOut] = useState(false);
+
+  async function drawerSignOut() {
+    setDrawerSigningOut(true);
+    setMobileOpen(false);
+    await signOutOfProLib(router);
+    setDrawerSigningOut(false);
+  }
 
   // ⌘K / Ctrl+K opens the palette from anywhere on the site.
   useEffect(() => {
@@ -133,14 +144,13 @@ export function HeaderShell({ user }: { user: HeaderUser | null }) {
             )}
 
             {user ? (
-              <Link
-                href={dashboardHref}
-                aria-label={`Signed in as ${user.name}. Open dashboard.`}
-                className="relative ml-1 inline-flex items-center"
-              >
-                <Avatar name={user.name} src={user.avatarUrl} size="md" />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-gh-success ring-2 ring-gh-canvas" />
-              </Link>
+              <AccountMenu
+                name={user.name}
+                username={user.username}
+                email={user.email}
+                avatarUrl={user.avatarUrl}
+                dashboardHref={dashboardHref}
+              />
             ) : (
               <Link
                 href="/login"
@@ -215,6 +225,16 @@ export function HeaderShell({ user }: { user: HeaderUser | null }) {
                   >
                     Admin
                   </Link>
+                )}
+                {user && (
+                  <button
+                    type="button"
+                    onClick={drawerSignOut}
+                    disabled={drawerSigningOut}
+                    className="rounded-md border border-gh-border bg-gh-inset px-3 py-2 text-sm text-gh-fg-muted transition-colors hover:text-gh-danger disabled:opacity-50"
+                  >
+                    {drawerSigningOut ? "Signing out…" : "Sign out"}
+                  </button>
                 )}
               </div>
             </nav>

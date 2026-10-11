@@ -54,3 +54,6 @@ next-env.d.ts
 /data/
 /storage/
 
+
+# python test tooling
+__pycache__/

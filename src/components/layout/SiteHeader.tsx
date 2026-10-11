@@ -10,6 +10,7 @@ export async function SiteHeader() {
     ? {
         name: user.name,
         username: user.username,
+        email: user.email,
         avatarUrl: user.avatarUrl,
         role: user.role,
       }

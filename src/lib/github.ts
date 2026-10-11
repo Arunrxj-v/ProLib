@@ -564,6 +564,26 @@ export async function upsertGithubAccount(
 }
 
 /**
+ * Disconnects the student's GitHub account: removes the `github_accounts`
+ * row, which holds the OAuth access token and the linked identity.
+ *
+ * Deliberately narrow — it touches NOTHING else:
+ *   - the ProLib session (and every other user's row) is untouched
+ *   - projects, their repository URLs and the `github_repositories` cache
+ *     survive; repository metadata is public data, not OAuth credentials
+ *
+ * Idempotent: disconnecting an account that was never connected (or was
+ * already removed) is a no-op that reports `false`.
+ */
+export async function disconnectGithubAccount(userId: string): Promise<boolean> {
+  const removed = await db
+    .delete(githubAccounts)
+    .where(eq(githubAccounts.userId, userId))
+    .returning({ userId: githubAccounts.userId });
+  return removed.length > 0;
+}
+
+/**
  * Turns a pasted/picked repository URL into a stored association row
  * (§23) and returns its id — or null when the URL isn't a GitHub repo.
  *

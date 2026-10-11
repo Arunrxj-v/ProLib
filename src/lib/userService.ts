@@ -54,6 +54,12 @@ export async function updateProfileFor(
 
   if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
 
+  // GitHub is connected through OAuth; the profile form no longer edits the
+  // handle at all. `githubUsername` is only written when the caller passes
+  // it explicitly (PATCH /api/users/me merges the current value), so a
+  // save can never silently delete a legacy manually-entered username.
+  const writesGithubUsername = input.githubUsername !== undefined;
+
   // Department is required once the campus actually has departments. On a
   // brand-new instance the table is empty and there is nothing to pick, so we
   // don't block the student — empty database must stay usable.
@@ -92,7 +98,9 @@ export async function updateProfileFor(
       departmentId: parsed.data.departmentId || null,
       batch: parsed.data.batch ?? null,
       skills,
-      githubUsername: blankToNull(parsed.data.githubUsername),
+      ...(writesGithubUsername
+        ? { githubUsername: blankToNull(parsed.data.githubUsername) }
+        : {}),
       portfolioUrl: blankToNull(parsed.data.portfolioUrl),
       location: blankToNull(parsed.data.location),
       updatedAt: new Date(),

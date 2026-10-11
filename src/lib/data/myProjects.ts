@@ -14,8 +14,7 @@ import {
   socialLinks,
   technologies,
   users,
-} from "@/lib/db/schema";
-import type {
+} from "@/lib/db/schema";import type {
   ProjectLifecycleStatus,
   ProjectPublicationStatus,
   ProjectType,
@@ -354,6 +353,12 @@ export type ProfileCheck = {
 
 export async function getProfileChecks(
   userId: string,
+  /**
+   * State the caller already resolved (the profile page fetches the GitHub
+   * identity once) — the "GitHub connected" step is satisfied by an OAuth
+   * link OR a legacy manually-entered handle, never by the form alone.
+   */
+  opts: { githubConnected?: boolean } = {},
 ): Promise<{ checks: ProfileCheck[]; complete: number; total: number }> {
   const rows = await db
     .select({
@@ -397,7 +402,11 @@ export async function getProfileChecks(
     { label: "Department & batch set", done: Boolean(user?.departmentId && user?.batch), href: "/dashboard/profile" },
     { label: "Skills listed", done: skills.length > 0, href: "/dashboard/profile" },
     { label: "Profile photo", done: Boolean(user?.avatarUrl), href: "/dashboard/profile" },
-    { label: "GitHub username connected", done: Boolean(user?.githubUsername), href: "/dashboard/profile" },
+    {
+      label: "GitHub connected",
+      done: Boolean(user?.githubUsername) || Boolean(opts.githubConnected),
+      href: "/dashboard/profile",
+    },
     { label: "At least one social link", done: socialRows.length > 0, href: "/dashboard/profile" },
     { label: "First project approved", done: Number(projectRows[0]?.value ?? 0) > 0, href: "/dashboard/projects/new" },
   ];

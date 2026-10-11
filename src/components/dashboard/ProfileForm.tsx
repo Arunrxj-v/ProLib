@@ -16,7 +16,12 @@ import { SOCIAL_PROVIDERS } from "@/lib/constants";
 type Option = { id: string; name: string };
 
 /** Only the fields the form edits — the session user itself never crosses
- *  the client boundary (its module is `server-only`). */
+ *  the client boundary (its module is `server-only`).
+ *
+ *  There is deliberately no `githubUsername` field: GitHub is connected
+ *  through OAuth (see GithubAccountPanel) and the linked account is the
+ *  source of truth for the handle — the profile service preserves any
+ *  legacy manually-entered value instead of the form overwriting it. */
 export type ProfileUser = {
   name: string;
   username: string | null;
@@ -27,7 +32,6 @@ export type ProfileUser = {
   departmentId: string | null;
   batch: number | null;
   skills: string[] | null;
-  githubUsername: string | null;
   portfolioUrl: string | null;
   location: string | null;
 };
@@ -187,21 +191,6 @@ export function ProfileForm({ user, departments, socials }: ProfileFormProps) {
         <Panel padded={false}>
           <PanelHeader title="Links" description="Optional — empty fields stay hidden publicly." />
           <div className="grid gap-4 p-5 sm:grid-cols-2">
-            <Field
-              label="GitHub username"
-              htmlFor="p-github"
-              error={state.fieldErrors?.githubUsername}
-              hint="Just the handle — no URL needed."
-            >
-              <Input
-                id="p-github"
-                name="githubUsername"
-                defaultValue={user.githubUsername ?? ""}
-                invalid={Boolean(state.fieldErrors?.githubUsername)}
-                placeholder="octocat"
-              />
-            </Field>
-
             <Field label="Portfolio" htmlFor="p-portfolio" error={state.fieldErrors?.portfolioUrl}>
               <Input
                 id="p-portfolio"

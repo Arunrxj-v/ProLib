@@ -355,7 +355,9 @@ export async function updateProfileAction(
     departmentId: formValue(formData, "departmentId") || null,
     batch: formValue(formData, "batch"),
     skills: formValue(formData, "skills") || null,
-    githubUsername: formValue(formData, "githubUsername") || null,
+    // githubUsername is intentionally not read from the form: GitHub is
+    // connected via OAuth and `updateProfileFor` preserves the stored value
+    // when the field is not provided (legacy manual handles survive saves).
     portfolioUrl: formValue(formData, "portfolioUrl") || null,
     location: formValue(formData, "location") || null,
     avatar: avatar instanceof File && avatar.size > 0 ? avatar : null,

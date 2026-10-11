@@ -11,6 +11,7 @@ import { Badge, Eyebrow, TechTag } from "@/components/ui/Tag";
 import { SOCIAL_PROVIDERS, SITE } from "@/lib/constants";
 import { listProjectsByIds } from "@/lib/data/projects";
 import { getStudentByUsername, getStudentProjectIds } from "@/lib/data/students";
+import { getGithubIdentity } from "@/lib/github";
 import { compactNumber } from "@/lib/utils";
 
 function socialIcon(provider: string) {
@@ -50,6 +51,12 @@ export default async function StudentProfilePage({
 
   const student = await getStudentByUsername(username);
   if (!student) notFound();
+
+  // The OAuth-linked GitHub account is the source of truth for the handle;
+  // a legacy manually-entered username keeps rendering for profiles that
+  // predate the connection flow (it is never silently deleted).
+  const githubIdentity = await getGithubIdentity(student.id);
+  const githubLogin = githubIdentity?.login ?? student.githubUsername;
 
   const projectIds = await getStudentProjectIds(student.id);
   const projects = await listProjectsByIds(projectIds);
@@ -131,11 +138,11 @@ export default async function StudentProfilePage({
               )}
 
               {/* Socials render only when the student connected them. */}
-              {(student.socials.length > 0 || student.githubUsername) && (
+              {(student.socials.length > 0 || githubLogin) && (
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {student.githubUsername && (
+                  {githubLogin && (
                     <a
-                      href={`https://github.com/${student.githubUsername}`}
+                      href={`https://github.com/${githubLogin}`}
                       target="_blank"
                       rel="noopener noreferrer me"
                       className="inline-flex items-center gap-1.5 rounded-md border border-gh-border bg-gh-btn-bg px-2.5 py-1.5 text-xs font-medium text-gh-fg-default transition-colors hover:bg-gh-btn-hover"
