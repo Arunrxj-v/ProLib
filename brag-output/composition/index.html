@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>ProLib — launch brag</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link rel="stylesheet" href="assets/fonts/fonts.css" />
+    <script src="assets/audio-data.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0d1117; }
+
+      :root {
+        --canvas: #0d1117;
+        --inset: #010409;
+        --subtle: #161b22;
+        --card: #161b22;
+        --border: #30363d;
+        --border-muted: #21262d;
+        --fg: #f0f6fc;
+        --muted: #8b949e;
+        --accent: #58a6ff;
+        --success: #3fb950;
+        --attention: #d29922;
+        --danger: #f85149;
+        --btn: #21262d;
+        --btn-primary: #238636;
+        --bass: 0;
+      }
+
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--canvas);
+        color: var(--fg);
+        font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+      .accent { color: var(--accent); }
+
+      /* ---------- shared background layers (untimed, explicitly positioned) ---------- */
+      #bg-grid {
+        position: absolute; inset: 0; pointer-events: none;
+        background-image:
+          linear-gradient(rgba(48, 54, 61, 0.16) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(48, 54, 61, 0.16) 1px, transparent 1px);
+        background-size: 96px 96px;
+        opacity: 0.5;
+      }
+      #bg-glow {
+        position: absolute; inset: 0; pointer-events: none; opacity: 0.4;
+        background: radial-gradient(1100px 620px at 50% 34%, rgba(88, 166, 255, 0.13), transparent 70%);
+      }
+      #bg-vignette {
+        position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(1400px 900px at 50% 50%, transparent 55%, rgba(1, 4, 9, 0.75) 100%);
+      }
+
+      .scene { position: absolute; inset: 0; }
+      .stage { position: absolute; inset: 0; }
+
+      /* ---------- Scene 1 — the zip file ---------- */
+      .s1-wrap {
+        position: absolute; left: 240px; top: 300px; width: 1440px;
+      }
+      .zipcard {
+        display: inline-flex; align-items: center; gap: 22px;
+        border: 1px solid var(--border); background: var(--subtle);
+        border-radius: 8px; padding: 26px 30px;
+      }
+      .zipname { font-size: 40px; font-weight: 500; letter-spacing: -0.01em; }
+      .zipname .ch { opacity: 0; }
+      .zipbadge {
+        margin-left: 8px; font-size: 14px; font-weight: 600; letter-spacing: 0.09em;
+        color: var(--danger); background: rgba(248, 81, 73, 0.1);
+        border: 1px solid rgba(248, 81, 73, 0.45); border-radius: 6px; padding: 8px 13px;
+      }
+      .hook { font-size: 58px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; margin-top: 44px; }
+      .hook.h2 { margin-top: 10px; }
+
+      /* ---------- Scene 2 — the archive, live ---------- */
+      .s2-wrap { position: absolute; left: 200px; top: 224px; width: 1520px; }
+      .pill {
+        display: inline-flex; align-items: center; gap: 10px;
+        border: 1px solid var(--border); background: var(--subtle);
+        border-radius: 999px; padding: 9px 16px; font-size: 15px; letter-spacing: 0.02em; color: var(--muted);
+      }
+      .pill .dot {
+        width: 9px; height: 9px; border-radius: 50%; background: var(--success);
+        transform: scale(calc(1 + var(--bass) * 0.08));
+      }
+      .pill .strong { color: var(--fg); font-weight: 700; }
+      .pill .sep { color: var(--muted); }
+      .hero-h { font-size: 78px; font-weight: 800; letter-spacing: -0.03em; margin-top: 34px; }
+      .metrics { display: flex; gap: 24px; margin-top: 54px; }
+      .metric {
+        flex: 1; display: flex; align-items: center; gap: 16px;
+        border: 1px solid var(--border); background: var(--inset);
+        border-radius: 8px; padding: 18px 20px;
+      }
+      .chipicon {
+        width: 46px; height: 46px; flex: none; display: flex; align-items: center; justify-content: center;
+        border: 1px solid var(--border); background: var(--subtle); border-radius: 6px;
+      }
+      .mval { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+      .mlabel { font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+      /* ---------- Scene 3 — the two-minute create form ---------- */
+      .win {
+        position: absolute; left: 340px; top: 130px; width: 1240px; height: 780px;
+        border: 1px solid var(--border); background: var(--card); border-radius: 10px; overflow: hidden;
+      }
+      .win-top {
+        height: 54px; display: flex; align-items: center; padding: 0 24px;
+        border-bottom: 1px solid var(--border-muted); background: var(--subtle);
+      }
+      .win-path { font-size: 13px; color: var(--muted); letter-spacing: 0.04em; }
+      .win-body { padding: 28px 32px; }
+      .sec-head { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 16px; }
+      .field { margin-bottom: 20px; }
+      .field label { display: block; font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+      .field .req { color: var(--danger); }
+      .input, .textarea, .select {
+        border: 1px solid var(--border); background: var(--inset); border-radius: 6px;
+        padding: 13px 15px; font-size: 18px; color: var(--fg);
+      }
+      .textarea { font-size: 17px; line-height: 1.45; min-height: 74px; }
+      .select { display: flex; align-items: center; justify-content: space-between; font-size: 17px; }
+      .select .chev { color: var(--muted); font-size: 14px; }
+      .typed .ch { opacity: 0; }
+      .caret {
+        display: inline-block; width: 2px; height: 22px; background: var(--accent);
+        margin-left: 2px; vertical-align: -4px; animation: blink 1.06s steps(1, end) infinite;
+      }
+      .caret.big { height: 26px; }
+      @keyframes blink { 50% { opacity: 0; } }
+      .hint { font-size: 13px; color: var(--muted); margin-top: 8px; }
+      .grid2 { display: flex; gap: 20px; }
+      .grid2 .field { flex: 1; margin-bottom: 0; }
+      .chips { display: flex; gap: 12px; }
+      .chip {
+        border: 1px solid var(--border); background: var(--btn); color: var(--fg);
+        border-radius: 6px; padding: 9px 15px; font-size: 15px; font-weight: 500;
+      }
+      .win-foot {
+        position: absolute; left: 0; right: 0; bottom: 0; height: 96px;
+        border-top: 1px solid var(--border-muted); background: var(--subtle);
+        display: flex; align-items: center; justify-content: flex-end; gap: 16px; padding: 0 32px;
+      }
+      .btn-default, .btn-primary {
+        font: inherit; font-size: 16px; font-weight: 600; border-radius: 6px;
+        padding: 12px 22px; border: 1px solid var(--border); color: var(--fg); background: var(--btn);
+      }
+      .btn-primary { background: var(--btn-primary); border-color: rgba(63, 185, 80, 0.4); color: #ffffff; }
+      .published { font-size: 15px; color: var(--success); font-weight: 600; margin-left: 4px; }
+      #cursor { position: absolute; left: 1750px; top: 1010px; width: 26px; height: 26px; }
+
+      /* ---------- Scene 4 — it's live, with receipts ---------- */
+      .pcard {
+        position: absolute; left: 200px; top: 150px; width: 640px;
+        border: 1px solid var(--border); background: var(--card); border-radius: 8px; overflow: hidden;
+      }
+      .cover { position: relative; width: 100%; height: 320px; background: var(--inset); border-bottom: 1px solid var(--border); }
+      .badge-type, .badge-feat {
+        position: absolute; font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+        border-radius: 6px; padding: 6px 11px; backdrop-filter: blur(4px);
+      }
+      .badge-type { left: 14px; top: 14px; color: var(--accent); background: rgba(1, 4, 9, 0.85); border: 1px solid rgba(88, 166, 255, 0.4); }
+      .badge-feat { right: 14px; top: 14px; color: var(--success); background: rgba(1, 4, 9, 0.85); border: 1px solid rgba(63, 185, 80, 0.45); display: flex; align-items: center; gap: 7px; }
+      .badge-feat .fdot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+      .pcard-body { padding: 24px 26px 22px; }
+      .pcard-body h3 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+      .pcard-body p { font-size: 16px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+      .tags { display: flex; gap: 8px; margin-top: 18px; }
+      .tag { font-size: 13px; color: var(--muted); border: 1px solid var(--border); background: var(--inset); border-radius: 6px; padding: 5px 10px; }
+      .pcard-foot {
+        display: flex; align-items: center; gap: 12px; margin-top: 20px;
+        border-top: 1px solid var(--border-muted); padding-top: 16px;
+      }
+      .avatar {
+        width: 36px; height: 36px; border-radius: 6px; border: 1px solid var(--border); background: var(--subtle);
+        display: flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace;
+        font-size: 13px; font-weight: 700; color: var(--accent);
+      }
+      .owner { font-size: 15px; font-weight: 600; }
+      .owner .mono { font-size: 13px; font-weight: 400; color: var(--muted); }
+      .pstats { margin-left: auto; font-size: 13px; color: var(--muted); }
+
+      .repo {
+        position: absolute; left: 920px; top: 236px; width: 800px;
+        border: 1px solid var(--border); background: var(--card); border-radius: 8px; overflow: hidden;
+      }
+      .repo-head {
+        font-size: 12px; font-weight: 600; letter-spacing: 0.12em; color: var(--muted);
+        padding: 14px 22px; border-bottom: 1px solid var(--border); background: var(--subtle);
+      }
+      .repo-body { padding: 22px; }
+      .repo-link { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 600; }
+      .repo-stats { display: flex; gap: 22px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+      .repo-stats span { display: flex; align-items: center; gap: 7px; }
+      .repo-stats b { color: var(--fg); font-weight: 700; }
+      .langs { margin-top: 22px; }
+      .langs .lhead { font-size: 12px; color: var(--muted); margin-bottom: 10px; letter-spacing: 0.04em; }
+      .lang { display: flex; align-items: center; gap: 14px; margin-bottom: 9px; }
+      .lname { width: 110px; flex: none; font-size: 13px; color: var(--muted); }
+      .bar { flex: 1; height: 7px; border-radius: 999px; background: var(--inset); overflow: hidden; }
+      .bar .fill { display: block; width: 100%; height: 100%; border-radius: 999px; background: var(--accent); transform-origin: left center; }
+      .bar .fill.c2 { background: var(--done, #8957e5); }
+      .bar .fill.c3 { background: var(--success); }
+      .lpct { width: 46px; flex: none; text-align: right; font-size: 13px; color: var(--muted); }
+      .approved {
+        position: absolute; left: 920px; top: 700px; width: 800px;
+        display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; color: var(--success);
+        border: 1px solid rgba(63, 185, 80, 0.4); background: rgba(35, 134, 54, 0.12);
+        border-radius: 8px; padding: 15px 20px;
+      }
+
+      /* ---------- Scene 5 — built something worth sharing? ---------- */
+      .cta {
+        position: absolute; left: 340px; top: 250px; width: 1240px; height: 580px;
+        border: 1px solid var(--border); background: var(--card); border-radius: 10px;
+      }
+      .cta-old, .cta-new { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 60px; }
+      .pill2 {
+        display: inline-flex; align-items: center; gap: 9px; font-size: 13px; letter-spacing: 0.1em;
+        color: var(--accent); background: var(--inset); border: 1px solid var(--border);
+        border-radius: 999px; padding: 8px 15px;
+      }
+      .cta-old h2 { font-size: 54px; font-weight: 800; letter-spacing: -0.03em; margin-top: 26px; }
+      .checks { display: flex; gap: 34px; margin-top: 40px; }
+      .check { display: flex; align-items: center; gap: 10px; font-size: 17px; color: var(--fg); }
+      .wordmark { font-size: 116px; font-weight: 800; letter-spacing: -0.04em; }
+      .tagline { font-size: 30px; color: var(--muted); margin-top: 18px; letter-spacing: -0.01em; }
+      .cta-new .pill { margin-top: 34px; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="23"
+      data-width="1920"
+      data-height="1080"
+      data-fps="30"
+    >
+      <div id="bg-glow"></div>
+      <div id="bg-grid"></div>
+      <div id="bg-vignette"></div>
+
+      <!-- ============ Scene 1 — the zip file ============ -->
+      <section id="s1" class="clip scene" data-start="0" data-duration="4.35" data-track-index="1">
+        <div class="stage" id="s1stage">
+          <div class="s1-wrap">
+            <div class="zipcard" id="zipcard">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+                <path d="M14 3v5h5" />
+                <path d="M11.5 11h.01M12.5 13h.01M11.5 15h.01M12.5 17h.01" />
+              </svg>
+              <div class="zipname mono" id="zipname">capstone_final_FINALv3.zip</div>
+              <div class="zipbadge mono" id="zipbadge">UNOPENED SINCE MAY</div>
+            </div>
+            <p class="hook" id="hook1">Don&apos;t let your semester project</p>
+            <p class="hook h2 accent" id="hook2">rot in a zip file.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Scene 2 — the archive, live ============ -->
+      <section id="s2" class="clip scene" data-start="4.25" data-duration="4.35" data-track-index="2">
+        <div class="stage" id="s2stage">
+          <div class="s2-wrap">
+            <div class="pill mono" id="s2pill">
+              <span class="dot" id="s2dot"></span>
+              <span class="strong">SPRING 2027 CAPSTONE ARCHIVE</span>
+              <span class="sep">/</span>
+              <span class="accent">v2.4.0-campus</span>
+            </div>
+            <h1 class="hero-h" id="s2head">Discover what your college is <span class="accent">building.</span></h1>
+            <div class="metrics" id="metrics">
+              <div class="metric" id="m1">
+                <div class="chipicon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="mval"><span class="cval" id="c1">0</span><span class="accent">+</span></div>
+                  <div class="mlabel mono">Documented Projects</div>
+                </div>
+              </div>
+              <div class="metric" id="m2">
+                <div class="chipicon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="8" r="3" /><path d="M3 19a6 6 0 0 1 12 0" /><path d="M16 6.5a3 3 0 0 1 0 5.9" /><path d="M17.5 19a5.8 5.8 0 0 0-2-4" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="mval"><span class="cval" id="c2">0</span><span class="accent">+</span></div>
+                  <div class="mlabel mono">Student Builders</div>
+                </div>
+              </div>
+              <div class="metric" id="m3">
+                <div class="chipicon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d29922" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 9l3 3-3 3" /><path d="M13 15h4" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="mval"><span class="cval" id="c3">0</span><span class="accent">+</span></div>
+                  <div class="mlabel mono">Active Tech Stacks</div>
+                </div>
+              </div>
+              <div class="metric" id="m4">
+                <div class="chipicon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="12" r="2.5" /><path d="M6 8.5v7" /><path d="M8.5 6h4a3 3 0 0 1 3 3v.6" /><path d="M8.5 18h4a3 3 0 0 0 3-3v-.6" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="mval"><span class="cval" id="c4">0</span><span class="accent">+</span></div>
+                  <div class="mlabel mono">Open Source Repos</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Scene 3 — two minutes to publish ============ -->
+      <section id="s3" class="clip scene" data-start="8.45" data-duration="4.5" data-track-index="3">
+        <div class="stage" id="s3stage">
+          <div class="win" id="s3win">
+            <div class="win-top">
+              <div class="win-path mono">prolib &nbsp;/&nbsp; dashboard &nbsp;/&nbsp; projects &nbsp;/&nbsp; new</div>
+            </div>
+            <div class="win-body">
+              <div class="sec-head mono" id="s3h1">THE ESSENTIALS</div>
+              <div class="field" id="f1">
+                <label>Project name <span class="req">*</span></label>
+                <div class="input"><span class="typed mono" id="t1"></span><span class="caret"></span></div>
+              </div>
+              <div class="field" id="f2">
+                <label>Short description <span class="req">*</span></label>
+                <div class="textarea"><span class="typed" id="t2"></span><span class="caret big"></span></div>
+                <div class="hint mono"><span id="counter">0</span>/500 characters — one or two sentences. What does it do, for whom?</div>
+              </div>
+              <div class="grid2">
+                <div class="field" id="f3">
+                  <label>Project type <span class="req">*</span></label>
+                  <div class="select">Hackathon <span class="chev">▾</span></div>
+                </div>
+                <div class="field" id="f4">
+                  <label>Lifecycle</label>
+                  <div class="select">In Progress <span class="chev">▾</span></div>
+                </div>
+              </div>
+              <div style="height: 24px"></div>
+              <div class="sec-head mono" id="s3h2">STACK</div>
+              <div class="chips">
+                <span class="chip" id="chip1">Next.js</span>
+                <span class="chip" id="chip2">PostgreSQL</span>
+                <span class="chip" id="chip3">Leaflet</span>
+              </div>
+            </div>
+            <div class="win-foot" id="s3foot">
+              <div class="btn-default">Save draft</div>
+              <div class="btn-primary" id="publish">Publish</div>
+              <div class="published mono" id="published">✓ Published</div>
+            </div>
+          </div>
+          <div id="cursor">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="#f0f6fc" stroke="#0d1117" stroke-width="1.4" stroke-linejoin="round">
+              <path d="M5 3l14 8.5-6.2 1.4L9.6 19z" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Scene 4 — it's live, with receipts ============ -->
+      <section id="s4" class="clip scene" data-start="12.8" data-duration="4.45" data-track-index="4">
+        <div class="stage" id="s4stage">
+          <div class="pcard" id="pcard">
+            <div class="cover">
+              <svg width="640" height="320" viewBox="0 0 640 320" fill="none" data-layout-allow-overflow>
+                <rect width="640" height="320" fill="#010409" />
+                <g stroke="#21262d" stroke-width="10">
+                  <path d="M-20 90 H660" /><path d="M-20 230 H660" /><path d="M150 -20 V340" /><path d="M470 -20 V340" />
+                </g>
+                <g stroke="#30363d" stroke-width="2">
+                  <path d="M-20 160 H660" /><path d="M310 -20 V340" />
+                </g>
+                <path d="M60 280 C 150 250, 150 120, 240 110 S 420 190, 520 90" stroke="#58a6ff" stroke-width="5" stroke-linecap="round" fill="none" />
+                <circle cx="60" cy="280" r="11" fill="#0d1117" stroke="#58a6ff" stroke-width="4" />
+                <circle cx="240" cy="110" r="11" fill="#0d1117" stroke="#58a6ff" stroke-width="4" />
+                <circle cx="520" cy="90" r="13" fill="#3fb950" />
+                <circle cx="520" cy="90" r="22" fill="#3fb950" opacity="0.22" />
+                <rect x="446" y="258" width="164" height="34" rx="6" fill="#161b22" stroke="#30363d" />
+                <text x="462" y="280" fill="#8b949e" font-family="monospace" font-size="14">NORTH GATE LINE</text>
+              </svg>
+              <span class="badge-type mono">HACKATHON</span>
+              <span class="badge-feat mono" id="badgefeat"><span class="fdot"></span>FEATURED CAPSTONE</span>
+            </div>
+            <div class="pcard-body">
+              <h3>CampusRoute</h3>
+              <p>Real-time shuttle tracking for the north gate.</p>
+              <div class="tags">
+                <span class="tag mono">Next.js</span>
+                <span class="tag mono">PostgreSQL</span>
+                <span class="tag mono">Leaflet</span>
+              </div>
+              <div class="pcard-foot">
+                <div class="avatar">AR</div>
+                <div class="owner">Anjali R. <span class="mono">(CSE '27) + 2</span></div>
+                <div class="pstats mono">1.2k views · 84 likes</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="repo" id="repoblock">
+            <div class="repo-head mono">GITHUB REPOSITORY</div>
+            <div class="repo-body">
+              <div class="repo-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round">
+                  <circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="12" r="2.5" /><path d="M6 8.5v7" /><path d="M8.5 6H14a4 4 0 0 1 4 4v-.5" /><path d="M8.5 18H14a4 4 0 0 0 4-4v.5" />
+                </svg>
+                <span class="mono">ceconline/campusroute</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6e7681" stroke-width="2" stroke-linecap="round"><path d="M7 17L17 7" /><path d="M9 7h8v8" /></svg>
+              </div>
+              <div class="repo-stats mono">
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#d29922"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" /></svg>
+                  <b id="stars">0</b> stars
+                </span>
+                <span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="6" r="2.5" /><circle cx="6" cy="18" r="2.5" /><circle cx="18" cy="12" r="2.5" /><path d="M6 8.5v7" /><path d="M8.5 6H14a4 4 0 0 1 4 4v-.5" /><path d="M8.5 18H14a4 4 0 0 0 4-4v.5" /></svg>
+                  <b id="forks">0</b> forks
+                </span>
+                <span>Updated 3 days ago</span>
+              </div>
+              <div class="langs">
+                <div class="lhead mono">Languages</div>
+                <div class="lang"><span class="lname mono">TypeScript</span><span class="bar"><span class="fill" id="lang1"></span></span><span class="lpct mono">78%</span></div>
+                <div class="lang"><span class="lname mono">CSS</span><span class="bar"><span class="fill c2" id="lang2"></span></span><span class="lpct mono">14%</span></div>
+                <div class="lang"><span class="lname mono">Shell</span><span class="bar"><span class="fill c3" id="lang3"></span></span><span class="lpct mono">8%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="approved mono" id="approved">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+            Faculty Approved
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Scene 5 — built something worth sharing? ============ -->
+      <section id="s5" class="clip scene" data-start="17.15" data-duration="5.85" data-track-index="5">
+        <div class="stage" id="s5stage">
+          <div class="cta" id="ctacard">
+            <div class="cta-old" id="ctaold">
+              <span class="pill2 mono" id="s5pill">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4 19a2 2 0 0 1 2-2h13" /></svg>
+                OPEN ACADEMIC ARCHIVE
+              </span>
+              <h2 id="s5head">Built something worth sharing?</h2>
+              <div class="checks">
+                <span class="check" id="ck1">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Markdown &amp; README import
+                </span>
+                <span class="check" id="ck2">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Gallery &amp; architecture diagrams
+                </span>
+                <span class="check" id="ck3">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3fb950" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+                  Team members with real profiles
+                </span>
+              </div>
+            </div>
+            <div class="cta-new" id="ctanew">
+              <div class="wordmark" id="wordmark">Pro<span class="accent">Lib</span></div>
+              <p class="tagline" id="s5tag">Discover what your college is building.</p>
+              <div class="pill mono" id="s5pill2">
+                <span class="dot"></span>
+                <span class="strong">SPRING 2027 CAPSTONE ARCHIVE</span>
+                <span class="sep">/</span>
+                <span class="accent">v2.4.0-campus</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Audio ============ -->
+      <audio
+        id="music"
+        data-start="0"
+        data-duration="23"
+        data-track-index="0"
+        data-volume="0.32"
+        data-automation='{"version":1,"lanes":[{"target":"volume","points":[{"t":0,"v":0},{"t":0.6,"v":0.32},{"t":22.2,"v":0.32},{"t":23,"v":0}]}]}'
+        src="assets/music/happy-beats-business-moves-vol-9-by-ende-dot-app.mp3"
+      ></audio>
+
+      <!-- SFX: key ticks while the zip filename types -->
+      <audio id="k1" data-start="0.50" data-duration="0.25" data-track-index="11" data-volume="0.35" src="assets/sfx/keyboard/keypress-002.wav"></audio>
+      <audio id="k2" data-start="0.62" data-duration="0.25" data-track-index="12" data-volume="0.35" src="assets/sfx/keyboard/keypress-013.wav"></audio>
+      <audio id="k3" data-start="0.74" data-duration="0.25" data-track-index="13" data-volume="0.35" src="assets/sfx/keyboard/keypress-007.wav"></audio>
+      <audio id="k4" data-start="0.86" data-duration="0.25" data-track-index="14" data-volume="0.35" src="assets/sfx/keyboard/keypress-026.wav"></audio>
+      <audio id="k5" data-start="0.98" data-duration="0.25" data-track-index="15" data-volume="0.35" src="assets/sfx/keyboard/keypress-019.wav"></audio>
+      <audio id="k6" data-start="1.10" data-duration="0.25" data-track-index="16" data-volume="0.35" src="assets/sfx/keyboard/keypress-002.wav"></audio>
+      <audio id="k7" data-start="1.22" data-duration="0.25" data-track-index="17" data-volume="0.35" src="assets/sfx/keyboard/keypress-013.wav"></audio>
+      <audio id="k8" data-start="1.34" data-duration="0.25" data-track-index="18" data-volume="0.35" src="assets/sfx/keyboard/keypress-007.wav"></audio>
+      <audio id="k9" data-start="1.46" data-duration="0.25" data-track-index="19" data-volume="0.35" src="assets/sfx/keyboard/keypress-026.wav"></audio>
+      <!-- badge snap -->
+      <audio id="sx-badge" data-start="1.62" data-duration="0.11" data-track-index="20" data-volume="0.55" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <!-- scene 1 → 2 transition accent (beat-locked 4.23s strong cue) -->
+      <audio id="sx-tr1" data-start="4.23" data-duration="0.19" data-track-index="21" data-volume="0.6" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+      <!-- metric tiles -->
+      <audio id="sx-m1" data-start="5.78" data-duration="0.11" data-track-index="22" data-volume="0.5" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sx-m4" data-start="7.38" data-duration="0.19" data-track-index="23" data-volume="0.5" src="assets/sfx/interface/drop_002.ogg"></audio>
+      <!-- key ticks while CampusRoute types -->
+      <audio id="k10" data-start="9.25" data-duration="0.25" data-track-index="24" data-volume="0.35" src="assets/sfx/keyboard/keypress-019.wav"></audio>
+      <audio id="k11" data-start="9.45" data-duration="0.25" data-track-index="25" data-volume="0.35" src="assets/sfx/keyboard/keypress-002.wav"></audio>
+      <audio id="k12" data-start="9.65" data-duration="0.25" data-track-index="26" data-volume="0.35" src="assets/sfx/keyboard/keypress-026.wav"></audio>
+      <audio id="k13" data-start="9.85" data-duration="0.25" data-track-index="27" data-volume="0.35" src="assets/sfx/keyboard/keypress-007.wav"></audio>
+      <!-- key ticks while the summary fills -->
+      <audio id="k14" data-start="10.10" data-duration="0.25" data-track-index="28" data-volume="0.3" src="assets/sfx/keyboard/keypress-013.wav"></audio>
+      <audio id="k15" data-start="10.30" data-duration="0.25" data-track-index="29" data-volume="0.3" src="assets/sfx/keyboard/keypress-019.wav"></audio>
+      <audio id="k16" data-start="10.50" data-duration="0.25" data-track-index="30" data-volume="0.3" src="assets/sfx/keyboard/keypress-002.wav"></audio>
+      <audio id="k17" data-start="10.70" data-duration="0.25" data-track-index="31" data-volume="0.3" src="assets/sfx/keyboard/keypress-026.wav"></audio>
+      <!-- stack chips -->
+      <audio id="sx-c1" data-start="11.04" data-duration="0.11" data-track-index="32" data-volume="0.5" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sx-c2" data-start="11.58" data-duration="0.19" data-track-index="33" data-volume="0.5" src="assets/sfx/interface/drop_002.ogg"></audio>
+      <audio id="sx-c3" data-start="12.10" data-duration="0.11" data-track-index="34" data-volume="0.5" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <!-- publish click (beat-locked 12.65s strong cue) + transition -->
+      <audio id="sx-click" data-start="12.63" data-duration="0.02" data-track-index="35" data-volume="0.6" src="assets/sfx/interface/click_003.ogg"></audio>
+      <audio id="sx-tr2" data-start="12.80" data-duration="0.19" data-track-index="36" data-volume="0.55" src="assets/sfx/impact/impactSoft_medium_001.ogg"></audio>
+      <!-- project card lands -->
+      <audio id="sx-card" data-start="12.88" data-duration="0.6" data-track-index="37" data-volume="0.5" src="assets/sfx/casino/card-slide-1.ogg"></audio>
+      <!-- star count settles -->
+      <audio id="sx-star" data-start="14.36" data-duration="0.11" data-track-index="38" data-volume="0.45" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <!-- outro check lines -->
+      <audio id="sx-k1" data-start="18.28" data-duration="0.11" data-track-index="39" data-volume="0.5" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <audio id="sx-k2" data-start="18.68" data-duration="0.19" data-track-index="40" data-volume="0.5" src="assets/sfx/interface/drop_002.ogg"></audio>
+      <audio id="sx-k3" data-start="19.08" data-duration="0.11" data-track-index="41" data-volume="0.5" src="assets/sfx/interface/drop_001.ogg"></audio>
+      <!-- wordmark -->
+      <audio id="sx-logo" data-start="20.52" data-duration="0.13" data-track-index="42" data-volume="0.5" src="assets/sfx/interface/bong_001.ogg"></audio>
+    </div>
+
+    <script>
+      (function () {
+        var tl = gsap.timeline({ paused: true });
+
+        /* ---------- helpers ---------- */
+        function chars(el, text, at, step) {
+          el.textContent = "";
+          for (var i = 0; i < text.length; i++) {
+            var s = document.createElement("span");
+            s.className = "ch";
+            s.textContent = text[i] === " " ? "\u00a0" : text[i];
+            el.appendChild(s);
+            tl.set(s, { opacity: 1 }, at + i * step);
+          }
+          return at + text.length * step;
+        }
+        function counter(el, target, at, dur) {
+          var o = { v: 0 };
+          tl.to(
+            o,
+            {
+              v: target,
+              duration: dur,
+              ease: "power1.out",
+              onUpdate: function () {
+                el.textContent = Math.round(o.v).toLocaleString("en-US");
+              },
+            },
+            at,
+          );
+        }
+        function pop(sel, at, dy) {
+          tl.fromTo(sel, { opacity: 0, y: dy === undefined ? 24 : dy }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, at);
+        }
+
+        /* ================= Scene 1 — the zip file ================= */
+        tl.fromTo("#s1stage", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0);
+        tl.fromTo("#zipcard", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 0.14);
+        chars(document.getElementById("zipname"), "capstone_final_FINALv3.zip", 0.45, 0.042);
+        tl.fromTo("#zipbadge", { opacity: 0, scale: 1.16 }, { opacity: 1, scale: 1, duration: 0.26, ease: "back.out(2)" }, 1.66); // beat-grid: 1.59
+        pop("#hook1", 1.92, 26);
+        pop("#hook2", 2.62, 26); // accent beat 2.65
+        tl.to("#s1stage", { opacity: 0, duration: 0.2 }, 4.15);
+
+        /* ================= Scene 2 — the archive, live ================= */
+        tl.fromTo("#s2stage", { opacity: 0 }, { opacity: 1, duration: 0.28 }, 4.25);
+        pop("#s2pill", 4.74, -14); // beat-grid 4.75
+        pop("#s2head", 5.26, 30); // beat-grid 5.28
+        var tiles = [
+          { id: "#m1", at: 5.78, target: 248, c: "#c1" }, // beat-grid 5.80
+          { id: "#m2", at: 6.32, target: 1904, c: "#c2" }, // beat-grid 6.34
+          { id: "#m3", at: 6.84, target: 37, c: "#c3" }, // beat-grid 6.86
+          { id: "#m4", at: 7.38, target: 612, c: "#c4" }, // beat-grid 7.40
+        ];
+        for (var i = 0; i < tiles.length; i++) {
+          tl.fromTo(tiles[i].id, { opacity: 0, y: 26, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.34, ease: "power3.out" }, tiles[i].at);
+          counter(document.querySelector(tiles[i].c), tiles[i].target, tiles[i].at, 0.55);
+        }
+        tl.to("#s2stage", { opacity: 0, duration: 0.2 }, 8.4);
+
+        /* ================= Scene 3 — two minutes to publish ================= */
+        tl.fromTo("#s3stage", { opacity: 0 }, { opacity: 1, duration: 0.28 }, 8.45);
+        tl.fromTo("#s3win", { opacity: 0, y: 44 }, { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" }, 8.45);
+        pop("#s3h1", 8.88, 14);
+        pop("#f1", 9.02, 18);
+        chars(document.getElementById("t1"), "CampusRoute", 9.2, 0.068);
+        pop("#f2", 9.9, 18);
+        chars(
+          document.getElementById("t2"),
+          "Real-time shuttle tracking for the north gate.",
+          10.06,
+          0.018,
+        );
+        counter(document.getElementById("counter"), 44, 10.06, 0.85);
+        pop("#f3", 11.02, 16);
+        pop("#f4", 11.16, 16);
+        pop("#s3h2", 11.0, 14);
+        tl.fromTo("#chip1", { opacity: 0, y: -12, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: "back.out(2)" }, 11.04); // beat-grid 11.06
+        tl.fromTo("#chip2", { opacity: 0, y: -12, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: "back.out(2)" }, 11.58); // beat-grid 11.60
+        tl.fromTo("#chip3", { opacity: 0, y: -12, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: "back.out(2)" }, 12.10); // beat-grid 12.12
+        pop("#s3foot", 11.3, 20);
+        tl.fromTo("#published", { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.25, ease: "power2.out" }, 12.7);
+        /* cursor: glides to Publish and clicks */
+        tl.fromTo("#cursor", { opacity: 0, x: 0, y: 0 }, { opacity: 1, duration: 0.25 }, 11.7);
+        tl.to("#cursor", { x: -230, y: -130, duration: 0.6, ease: "power2.inOut" }, 11.95);
+        tl.to("#cursor", { scale: 0.86, duration: 0.08, ease: "power2.in" }, 12.63);
+        tl.to("#cursor", { scale: 1, duration: 0.14, ease: "power2.out" }, 12.71);
+        tl.fromTo("#publish", { scale: 1 }, { scale: 0.95, duration: 0.08, ease: "power2.in" }, 12.63);
+        tl.to("#publish", { scale: 1, duration: 0.18, ease: "back.out(2.5)" }, 12.71);
+        tl.to("#s3stage", { opacity: 0, duration: 0.2 }, 12.78);
+
+        /* ================= Scene 4 — it's live, with receipts ================= */
+        tl.fromTo("#s4stage", { opacity: 0 }, { opacity: 1, duration: 0.28 }, 12.8);
+        tl.fromTo("#pcard", { opacity: 0, y: 60, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 12.86);
+        tl.fromTo("#repoblock", { opacity: 0, x: 60 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 13.4);
+        counter(document.getElementById("stars"), 128, 13.9, 0.5);
+        counter(document.getElementById("forks"), 17, 14.05, 0.45);
+        tl.fromTo("#lang1", { scaleX: 0 }, { scaleX: 0.78, duration: 0.55, ease: "power2.out" }, 14.6);
+        tl.fromTo("#lang2", { scaleX: 0 }, { scaleX: 0.14, duration: 0.45, ease: "power2.out" }, 14.78);
+        tl.fromTo("#lang3", { scaleX: 0 }, { scaleX: 0.08, duration: 0.4, ease: "power2.out" }, 14.92);
+        tl.fromTo("#badgefeat", { opacity: 0, scale: 1.14 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)" }, 15.4);
+        tl.fromTo("#approved", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 15.7);
+        tl.to("#s4stage", { opacity: 0, duration: 0.26 }, 16.96);
+
+        /* ================= Scene 5 — built something worth sharing? ================= */
+        tl.fromTo("#s5stage", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 17.15);
+        tl.fromTo("#ctacard", { opacity: 0, y: 36 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, 17.15);
+        pop("#s5pill", 17.54, -12);
+        pop("#s5head", 17.68, 26);
+        tl.fromTo("#ck1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 18.28);
+        tl.fromTo("#ck2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 18.68);
+        tl.fromTo("#ck3", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" }, 19.08);
+        tl.to("#ctaold", { opacity: 0, duration: 0.24, ease: "power2.in" }, 20.3);
+        tl.fromTo("#wordmark", { opacity: 0, scale: 0.94, y: 14 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "power3.out" }, 20.52); // beat-locked 20.54
+        tl.fromTo("#s5tag", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 21.04); // beat-locked 21.06
+        tl.fromTo("#s5pill2", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 21.06);
+
+        /* ================= audio-reactive: bass drives glow + pill dot ================= */
+        var A = window.__PROLIB_AUDIO__;
+        var glow = document.getElementById("bg-glow");
+        var dot = document.getElementById("s2dot");
+        for (var f = 0; f < A.frames.length; f++) {
+          (function (fr, t) {
+            tl.call(
+              function () {
+                var b = fr.bands[0];
+                glow.style.opacity = (0.32 + b * 0.42).toFixed(3);
+                dot.style.setProperty("--bass", b.toFixed(3));
+              },
+              [],
+              t,
+            );
+          })(A.frames[f], f / A.fps);
+        }
+
+        window.__timelines["main"] = tl;
+        tl.seek(0);
+      })();
+    </script>
+  </body>
+</html>
