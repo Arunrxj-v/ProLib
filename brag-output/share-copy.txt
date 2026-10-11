@@ -1,0 +1,5 @@
+Made ProLib — a public archive where a college's capstones, hackathon builds and research prototypes get published instead of rotting in a zip file called capstone_final_FINALv3.zip.
+
+Don't let your semester project rot in a zip file.
+
+Next.js 16 + Drizzle + Postgres, GitHub-dark, and every star, fork and empty state on screen is real — the database ships empty on purpose.

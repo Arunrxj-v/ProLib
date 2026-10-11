@@ -9,7 +9,7 @@ Create a short launch-style brag video for ProLib, a public college project arch
 - Composition directory: `brag-output/composition/`
 - Rendered video: `brag-output/brag.mp4`
 - Format: landscape — 1920x1080
-- Duration: 22s (target window 15–25s)
+- Duration: 23s (target window 15–25s)
 
 ## Source Material
 - Project root: `/Users/arunrajv/Documents/projects/ProLib`
@@ -74,18 +74,18 @@ Create a short launch-style brag video for ProLib, a public college project arch
 Use the storyboard in `brag-output/brag-plan.md` as the creative contract.
 
 Scene summary:
-1. The zip file — 4.2s — typed `capstone_final_FINALv3.zip`, red `UNOPENED SINCE MAY`
+1. The zip file — 4.35s — typed `capstone_final_FINALv3.zip`, red `UNOPENED SINCE MAY`
    badge, then the verbatim line "Don't let your semester project rot in a zip file."
-2. The archive, live — 4.2s — hero pill, headline "Discover what your college is
+2. The archive, live — 4.35s — hero pill, headline "Discover what your college is
    building.", four metric tiles arriving one by one with counters ticking up.
-3. Two minutes to publish — 4.2s — the real wizard: "Project name" types
+3. Two minutes to publish — 4.5s — the real wizard: "Project name" types
    `CampusRoute`, summary fills with the character counter ticking, type = Hackathon,
    stack chips drop in, cursor clicks the green Publish button.
-4. It's live, with receipts — 4.4s — ProjectCard lands in the archive grid; the
+4. It's live, with receipts — 4.45s — ProjectCard lands in the archive grid; the
    GitHub repository block reads `ceconline/campusroute`, `★ 128 stars · 17 forks`,
    language bars fill (TypeScript 78% / CSS 14% / Shell 8%); `FEATURED CAPSTONE` +
    `Faculty Approved` settle in.
-5. Built something worth sharing? — 5.0s — contribute card with the three green-check
+5. Built something worth sharing? — 5.85s — contribute card with the three green-check
    lines arriving in succession, hold, then the ProLib wordmark + tagline +
    `v2.4.0-campus` pill.
 
@@ -144,7 +144,7 @@ Requirements:
   wizard and repo block above are all real UI recreations).
 - Keep all text readable in the final render (short label ~0.8s settled, sentence
   ~0.3s/word).
-- Keep the video within 15–25 seconds (22s planned).
+- Keep the video within 15–25 seconds (23s planned).
 - Include the planned music/SFX layer.
 - Treat `/brag` audio notes as guidance, not a fixed cue sheet; choose SFX after the
   visual animation exists.

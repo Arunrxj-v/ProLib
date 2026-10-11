@@ -111,7 +111,7 @@
 
       /* ---------- Scene 3 — the two-minute create form ---------- */
       .win {
-        position: absolute; left: 340px; top: 130px; width: 1240px; height: 780px;
+        position: absolute; left: 340px; top: 128px; width: 1240px; height: 796px;
         border: 1px solid var(--border); background: var(--card); border-radius: 10px; overflow: hidden;
       }
       .win-top {
@@ -142,6 +142,8 @@
       .grid2 { display: flex; gap: 20px; }
       .grid2 .field { flex: 1; margin-bottom: 0; }
       .chips { display: flex; gap: 12px; }
+      .btn-choose { font-size: 15px; font-weight: 600; border: 1px solid var(--border); background: var(--btn); color: var(--fg); border-radius: 6px; padding: 11px 18px; }
+      .cover-row { display: flex; align-items: center; gap: 14px; }
       .chip {
         border: 1px solid var(--border); background: var(--btn); color: var(--fg);
         border-radius: 6px; padding: 9px 15px; font-size: 15px; font-weight: 500;
@@ -360,7 +362,16 @@
                   <div class="select">In Progress <span class="chev">▾</span></div>
                 </div>
               </div>
-              <div style="height: 24px"></div>
+              <div style="height: 22px"></div>
+              <div class="sec-head mono" id="s3hcover">COVER IMAGE</div>
+              <div class="field" id="fcover" style="margin-bottom: 0">
+                <label>Cover <span class="req">*</span></label>
+                <div class="cover-row">
+                  <div class="btn-choose">Choose image</div>
+                  <span class="hint mono" style="margin-top: 0">No image chosen</span>
+                </div>
+              </div>
+              <div style="height: 22px"></div>
               <div class="sec-head mono" id="s3h2">STACK</div>
               <div class="chips">
                 <span class="chip" id="chip1">Next.js</span>
@@ -631,6 +642,8 @@
         counter(document.getElementById("counter"), 44, 10.06, 0.85);
         pop("#f3", 11.02, 16);
         pop("#f4", 11.16, 16);
+        pop("#s3hcover", 11.28, 14);
+        pop("#fcover", 11.4, 16);
         pop("#s3h2", 11.0, 14);
         tl.fromTo("#chip1", { opacity: 0, y: -12, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: "back.out(2)" }, 11.04); // beat-grid 11.06
         tl.fromTo("#chip2", { opacity: 0, y: -12, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.28, ease: "back.out(2)" }, 11.58); // beat-grid 11.60
@@ -639,7 +652,7 @@
         tl.fromTo("#published", { opacity: 0, x: -8 }, { opacity: 1, x: 0, duration: 0.25, ease: "power2.out" }, 12.7);
         /* cursor: glides to Publish and clicks */
         tl.fromTo("#cursor", { opacity: 0, x: 0, y: 0 }, { opacity: 1, duration: 0.25 }, 11.7);
-        tl.to("#cursor", { x: -230, y: -130, duration: 0.6, ease: "power2.inOut" }, 11.95);
+        tl.to("#cursor", { x: -255, y: -112, duration: 0.6, ease: "power2.inOut" }, 11.95);
         tl.to("#cursor", { scale: 0.86, duration: 0.08, ease: "power2.in" }, 12.63);
         tl.to("#cursor", { scale: 1, duration: 0.14, ease: "power2.out" }, 12.71);
         tl.fromTo("#publish", { scale: 1 }, { scale: 0.95, duration: 0.08, ease: "power2.in" }, 12.63);

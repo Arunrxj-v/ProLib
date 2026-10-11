@@ -76,7 +76,7 @@ Entry → key action → result, the real happy path:
 
 ## Format: landscape — 1920x1080
 
-## Duration: 22s (scenes: 4.2 + 4.2 + 4.2 + 4.4 + 5.0)
+## Duration: 23s (scenes: 4.35 + 4.35 + 4.5 + 4.45 + 5.85)
 
 ## Visual identity (from the project)
 
@@ -120,7 +120,7 @@ get seen. Built with Next.js 16, Drizzle and Postgres.
 
 ## Storyboard
 
-### Scene 1 — The zip file — 4.2s
+### Scene 1 — The zip file — 4.35s
 Black `#0d1117` canvas, faint inset panel. `capstone_final_FINALv3.zip` types out in
 JetBrains Mono, character by character; a red `UNOPENED SINCE MAY` badge snaps on to
 its right. Then the copy fades up beneath, Inter, with "rot in a zip file" in accent
@@ -134,7 +134,7 @@ on the badge snap.
 Music: bed at low volume, still establishing.
 Transition mood: clean wipe right → Scene 2, timed on the 4.23s strong cue.
 
-### Scene 2 — The archive, live — 4.2s
+### Scene 2 — The archive, live — 4.35s
 Recreation of the real homepage hero: mono pill `● SPRING 2027 CAPSTONE ARCHIVE /
 v2.4.0-campus` lands first, then the headline **"Discover what your college is
 building."** ("building." in accent), then the four campus metric tiles — Documented
@@ -149,7 +149,7 @@ and fourth only).
 Music: bed lifts slightly, first strong accent at 6.34s as the last tile lands.
 Transition mood: soft slide up → Scene 3, on the 8.44s strong cue.
 
-### Scene 3 — Two minutes to publish — 4.2s
+### Scene 3 — Two minutes to publish — 4.5s
 Recreation of the real create wizard `/dashboard/projects/new`: mono section headers
 `THE ESSENTIALS`, then the "Project name" field types itself to **CampusRoute**; the
 "Short description" field fills with "Real-time shuttle tracking for the north gate,
@@ -165,7 +165,7 @@ click on Publish.
 Music: steady; land the Publish click near the 12.65s strong cue.
 Transition mood: hard cut to black edge → Scene 4, the payoff.
 
-### Scene 4 — It's live, with receipts — 4.4s
+### Scene 4 — It's live, with receipts — 4.45s
 The result: a ProjectCard lands into the archive grid (cover block, `HACKATHON`
 badge, title **CampusRoute**, the same one-line summary, tech tags, owner row
 "Anjali R. (CSE '27) + 2", `1.2k views · 84 likes`). Beside it, the real GitHub
@@ -181,7 +181,7 @@ fills riding the beat.
 Music: strongest section; the 12.65s cue carries the cut in.
 Transition mood: soft crossfade → Scene 5.
 
-### Scene 5 — Built something worth sharing? — 5.0s
+### Scene 5 — Built something worth sharing? — 5.85s
 The real contribute card: mono `OPEN ACADEMIC ARCHIVE` pill, headline **"Built
 something worth sharing?"**, the product's own subcopy (trimmed to one line), and the
 three check lines arriving in quick succession: `Markdown & README import`,
