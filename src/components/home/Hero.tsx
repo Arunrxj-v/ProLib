@@ -2,7 +2,6 @@ import { LinkButton } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Skeleton } from "@/components/ui/Panel";
 import { getLibraryStats } from "@/lib/data/stats";
-import { getAcademicYears } from "@/lib/data/taxonomy";
 import { compactNumber } from "@/lib/utils";
 import { SITE } from "@/lib/constants";
 
@@ -14,27 +13,11 @@ const METRICS = [
 ] as const;
 
 export async function Hero() {
-  const [stats, years] = await Promise.all([getLibraryStats(), getAcademicYears()]);
-  const currentYear = years.find((year) => year.current);
-  const term = currentYear
-    ? `SPRING ${currentYear.endYear} CAPSTONE ARCHIVE`
-    : `CAPSTONE ARCHIVE ${new Date().getFullYear()}`;
+  const stats = await getLibraryStats();
 
   return (
     <section className="w-full border-b border-gh-border-muted pb-12 pt-8 lg:pb-16 lg:pt-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        {/* Academic stream pill */}
-        <div className="mb-6 flex items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-gh-border bg-gh-subtle px-3 py-1 font-mono text-xs text-gh-fg-muted">
-            <span className="h-2 w-2 rounded-full bg-gh-success" />
-            <span className="font-semibold tracking-wide text-gh-fg-default">
-              {term}
-            </span>
-            <span className="text-gh-border">/</span>
-            <span className="text-gh-accent">v2.4.0-campus</span>
-          </div>
-        </div>
-
         {/* Headline + actions */}
         <div className="mb-10 grid grid-cols-1 items-end gap-8 lg:grid-cols-12">
           <div className="lg:col-span-8">
@@ -103,7 +86,6 @@ export function HeroSkeleton() {
   return (
     <section className="w-full border-b border-gh-border-muted pb-12 pt-8 lg:pb-16 lg:pt-14">
       <div className="mx-auto max-w-7xl space-y-6 px-4 sm:px-6">
-        <Skeleton className="h-7 w-72 rounded-full" />
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-8">
             <Skeleton className="h-12 w-4/5" />
