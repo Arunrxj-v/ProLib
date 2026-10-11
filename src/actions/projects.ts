@@ -15,7 +15,6 @@ import {
 import { db } from "@/lib/db";
 import { socialLinks, type Project } from "@/lib/db/schema";
 import {
-  addGalleryImagesFor,
   addMemberFor,
   createProjectFor,
   deleteProjectFor,
@@ -260,25 +259,11 @@ export async function withdrawProjectAction(
 /* ------------------------------------------------------------------ */
 /* Gallery                                                             */
 /* ------------------------------------------------------------------ */
-
-export async function uploadGalleryImageAction(
-  _prev: ProjectActionState,
-  formData: FormData,
-): Promise<ProjectActionState> {
-  const projectId = formValue(formData, "projectId");
-  const gate = await ownedProject(projectId);
-  if (!gate.ok) return gate.state;
-
-  const files = formData
-    .getAll("images")
-    .filter((value): value is File => value instanceof File && value.size > 0);
-
-  const result = await addGalleryImagesFor(gate.user, gate.project, files);
-  if (!result.ok) return toOptional(result);
-
-  revalidatePath(`/dashboard/projects/${projectId}/edit`);
-  return { info: result.info };
-}
+/* Screenshot UPLOADS deliberately have no Server Action: multi-MB files
+ * go to the dedicated authenticated endpoint `POST /api/projects/:id/images`
+ * (GalleryEditor fetches it), which enforces type/size/count in the same
+ * shared service layer — so an action body size limit never has to grow
+ * with the gallery. Removal below only carries an id, so it stays here. */
 
 export async function removeGalleryImageAction(
   _prev: ProjectActionState,

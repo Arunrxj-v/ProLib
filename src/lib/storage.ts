@@ -46,8 +46,12 @@ export class UploadError extends Error {
   }
 }
 
-/** Validates type + size, then writes the file under a random name. */
-export async function saveUpload(file: File, scope: UploadScope): Promise<StoredFile> {
+/**
+ * Type + size rules only — never writes. Safe to run across a whole batch
+ * BEFORE anything is stored, so one bad file rejects the request outright
+ * instead of leaving a half-uploaded gallery behind.
+ */
+export function validateUpload(file: File): void {
   if (!file || typeof file.arrayBuffer !== "function" || file.size === 0) {
     throw new UploadError("No file was received.");
   }
@@ -63,6 +67,12 @@ export async function saveUpload(file: File, scope: UploadScope): Promise<Stored
     const mb = Math.round(UPLOAD_RULES.maxBytes / (1024 * 1024));
     throw new UploadError(`File is too large. Maximum size is ${mb} MB.`);
   }
+}
+
+/** Validates type + size, then writes the file under a random name. */
+export async function saveUpload(file: File, scope: UploadScope): Promise<StoredFile> {
+  validateUpload(file);
+  const extension = EXTENSION_BY_TYPE[file.type];
 
   const bucket = randomBytes(2).toString("hex");
   const name = `${randomBytes(9).toString("hex")}.${extension}`;

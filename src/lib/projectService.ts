@@ -8,6 +8,7 @@ import { getEditableProject } from "@/lib/auth/guards";
 import type { SessionUser } from "@/lib/auth/session";
 import {
   PROJECT_SECTION_KEYS,
+  UPLOAD_RULES,
   type ProjectLifecycleStatus,
   type ProjectSectionKey,
   type ProjectType,
@@ -26,7 +27,12 @@ import {
 } from "@/lib/db/schema";
 import { associateGithubRepository } from "@/lib/github";
 import { isModerationEnabled } from "@/lib/settings";
-import { UploadError, removeUpload, saveUpload } from "@/lib/storage";
+import {
+  UploadError,
+  removeUpload,
+  saveUpload,
+  validateUpload,
+} from "@/lib/storage";
 import { slugify } from "@/lib/utils";
 import {
   blankToNull,
@@ -605,6 +611,29 @@ export async function addGalleryImagesFor(
     return { ok: false, error: "Choose at least one image to upload." };
   }
 
+  // Server-side file-count validation — one request, one bounded batch.
+  if (files.length > UPLOAD_RULES.maxFilesPerUpload) {
+    return {
+      ok: false,
+      error: `Upload at most ${UPLOAD_RULES.maxFilesPerUpload} images at a time.`,
+    };
+  }
+
+  // Validate the WHOLE batch (type + size) before a single byte is written:
+  // one bad file rejects the request outright, so a failed upload can never
+  // leave a half-populated gallery behind.
+  for (const file of files) {
+    try {
+      validateUpload(file);
+    } catch (cause) {
+      return {
+        ok: false,
+        error: cause instanceof UploadError ? cause.message : "The upload failed.",
+      };
+    }
+  }
+
+  let added = 0;
   try {
     const positionRows = await db
       .select({ value: count() })
@@ -614,14 +643,22 @@ export async function addGalleryImagesFor(
 
     for (const file of files) {
       const stored = await saveUpload(file, "galleries");
-      await db.insert(projectImages).values({
-        id: crypto.randomUUID(),
-        projectId: project.id,
-        path: stored.path,
-        alt: project.title,
-        position: position++,
-      });
+      try {
+        await db.insert(projectImages).values({
+          id: crypto.randomUUID(),
+          projectId: project.id,
+          path: stored.path,
+          alt: project.title,
+          position: position++,
+        });
+      } catch (insertError) {
+        // The row never landed — take the file back off disk rather than
+        // orphaning an unreferenced upload.
+        await removeUpload(stored.path);
+        throw insertError;
+      }
       await audit(actor.id, "project.gallery.add", project.id, stored.path);
+      added += 1;
     }
   } catch (cause) {
     return {
@@ -630,7 +667,13 @@ export async function addGalleryImagesFor(
     };
   }
 
-  return { ok: true, info: "Image added to the gallery." };
+  return {
+    ok: true,
+    info:
+      added === 1
+        ? "Image added to the gallery."
+        : `${added} images added to the gallery.`,
+  };
 }
 
 export async function removeGalleryImageFor(

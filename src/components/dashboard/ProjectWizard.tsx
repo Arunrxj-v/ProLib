@@ -62,11 +62,11 @@ export function ProjectWizard({ technologies }: Props) {
         </Alert>
       )}
 
-      <form
-        action={formAction}
-        encType="multipart/form-data"
-        className="space-y-8"
-      >
+      {/* `action` is a Server Action, so React owns the encoding: it posts
+          multipart/form-data automatically (with and without JavaScript).
+          An explicit encType/method here would be rejected by React — the
+          cover file still travels inside the FormData. */}
+      <form action={formAction} className="space-y-8">
         {/* ---------------- Basics ---------------- */}
         <section className="rounded-lg border border-gh-border bg-gh-surface p-5 sm:p-6">
           <h2 className="mb-4 font-mono text-xs font-semibold uppercase tracking-wider text-gh-fg-muted">

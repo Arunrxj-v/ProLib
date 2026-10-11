@@ -104,6 +104,8 @@ export const UPLOAD_RULES = {
   maxBytes: 4 * 1024 * 1024,
   allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/avif"],
   allowedExtensions: ["jpg", "jpeg", "png", "webp", "avif"],
+  /** Per-request upload ceiling — server-side, enforced in addGalleryImagesFor. */
+  maxFilesPerUpload: 10,
 } as const;
 
 export const PAGE_SIZE = 12;

@@ -2,12 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useRef, useState, type FormEvent } from "react";
 
-import {
-  removeGalleryImageAction,
-  uploadGalleryImageAction,
-} from "@/actions/projects";
+import { removeGalleryImageAction } from "@/actions/projects";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Alert, EmptyState } from "@/components/ui/Panel";
@@ -16,8 +14,18 @@ import { cn } from "@/lib/utils";
 type ImageRow = { id: string; path: string; alt: string | null };
 
 /**
- * Gallery upload + removal. Files go straight through the server action, so
- * type/size validation happens on the server and the list revalidates itself.
+ * Gallery upload + removal, split across the two surfaces each payload
+ * belongs to:
+ *
+ *   - Uploads POST multipart FormData to `POST /api/projects/:id/images`
+ *     — the dedicated authenticated endpoint (requireApiUser + owner gate,
+ *     type/size/count validation in the shared storage/service layer).
+ *     Files never ride a Server Action body, so a batch of multi-MB
+ *     screenshots is not bounded by `serverActions.bodySizeLimit`.
+ *     On success the router refreshes, so the list below re-renders from
+ *     the database — nothing is optimistically invented.
+ *   - Removal stays a Server Action: it carries only an image id, and the
+ *     existing action already revalidates the page.
  */
 export function GalleryEditor({
   projectId,
@@ -28,17 +36,79 @@ export function GalleryEditor({
   images: ImageRow[];
   title: string;
 }) {
-  const [uploadState, uploadAction, uploadPending] = useActionState(
-    uploadGalleryImageAction,
-    {},
-  );
+  const router = useRouter();
   const [removeState, removeAction, removePending] = useActionState(
     removeGalleryImageAction,
     {},
   );
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<{
+    failed: boolean;
+    text: string;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const message = uploadState.error ?? uploadState.info ?? removeState.error ?? removeState.info ?? null;
-  const failed = Boolean(uploadState.error ?? removeState.error);
+  async function upload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+
+    // Nothing chosen — say so instead of firing an empty request.
+    const files = data
+      .getAll("images")
+      .filter((value): value is File => value instanceof File && value.size > 0);
+    if (files.length === 0) {
+      setUploadMessage({
+        failed: true,
+        text: "Choose at least one image to upload.",
+      });
+      return;
+    }
+
+    setUploading(true);
+    setUploadMessage(null);
+    try {
+      const response = await fetch(`/api/projects/${projectId}/images`, {
+        method: "POST",
+        body: data,
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        info?: string;
+        message?: string;
+      } | null;
+
+      if (!response.ok) {
+        setUploadMessage({
+          failed: true,
+          text: payload?.message ?? "The upload failed — try again.",
+        });
+        return;
+      }
+
+      setUploadMessage({
+        failed: false,
+        text: payload?.info ?? "Image added to the gallery.",
+      });
+      form.reset();
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      // Re-read the server-rendered list so the new rows come from the DB.
+      router.refresh();
+    } catch {
+      setUploadMessage({
+        failed: true,
+        text: "ProLib could not be reached — try the upload again.",
+      });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const message =
+    uploadMessage?.text ??
+    removeState.error ??
+    removeState.info ??
+    null;
+  const failed = Boolean(uploadMessage?.failed ?? removeState.error);
 
   return (
     <div className="space-y-4">
@@ -93,7 +163,7 @@ export function GalleryEditor({
       )}
 
       <form
-        action={uploadAction}
+        onSubmit={upload}
         className={cn(
           "flex flex-col gap-3 rounded-md border border-dashed border-gh-border bg-gh-inset p-4 sm:flex-row sm:items-end",
         )}
@@ -112,6 +182,7 @@ export function GalleryEditor({
             name="images"
             type="file"
             multiple
+            ref={fileInputRef}
             accept="image/jpeg,image/png,image/webp,image/avif"
             className="mt-1.5 block w-full text-xs text-gh-fg-muted file:mr-3 file:rounded file:border file:border-gh-border file:bg-gh-btn-bg file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gh-fg-default hover:file:bg-gh-btn-hover"
           />
@@ -123,10 +194,10 @@ export function GalleryEditor({
         <Button
           type="submit"
           variant="default"
-          disabled={uploadPending}
-          leadingIcon={uploadPending ? "progress_activity" : "upload"}
+          disabled={uploading}
+          leadingIcon={uploading ? "progress_activity" : "upload"}
         >
-          {uploadPending ? "Uploading…" : "Upload"}
+          {uploading ? "Uploading…" : "Upload"}
         </Button>
       </form>
 
