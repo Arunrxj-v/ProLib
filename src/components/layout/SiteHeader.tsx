@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth/session";
+import { countUnreadNotifications } from "@/lib/data/notifications";
 
 import { HeaderShell, type HeaderUser } from "./HeaderShell";
 
@@ -16,5 +17,11 @@ export async function SiteHeader() {
       }
     : null;
 
-  return <HeaderShell user={headerUser} />;
+  // Bell indicator: the real unread count at render time. A failed count
+  // query must never produce a false indicator — it degrades to zero.
+  const unreadCount = user
+    ? await countUnreadNotifications(user.id).catch(() => 0)
+    : 0;
+
+  return <HeaderShell user={headerUser} unreadCount={unreadCount} />;
 }

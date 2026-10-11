@@ -158,6 +158,13 @@ export const users = pgTable(
     portfolioUrl: text("portfolio_url"),
     location: text("location"),
     featured: boolean("featured").notNull().default(false),
+    /**
+     * Read-state for the bell indicator: every review-activity event older
+     * than this timestamp has been seen. Null = never opened the panel, so
+     * genuine (unseen) events count as unread. Per-user, so switching
+     * accounts can never leak indicator state.
+     */
+    notificationsSeenAt: timestamptz("notifications_seen_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

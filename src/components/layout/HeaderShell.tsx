@@ -33,12 +33,64 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function HeaderShell({ user }: { user: HeaderUser | null }) {
+export function HeaderShell({
+  user,
+  unreadCount = 0,
+}: {
+  user: HeaderUser | null;
+  /** Server-rendered count of unseen review notifications (0 = dark bell). */
+  unreadCount?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [drawerSigningOut, setDrawerSigningOut] = useState(false);
+  // The indicator tracks the server's count, then reconciles live: after the
+  // panel is opened (mark-read), on focus, and on every navigation. Loading,
+  // signed-out and error states all keep the last honest value — the dot is
+  // only ever rendered from a real fetched count, never optimistically.
+  const [unread, setUnread] = useState(unreadCount);
+  const [lastServerCount, setLastServerCount] = useState(unreadCount);
+  // Adjust during render when the server hands down a fresh count (the
+  // documented alternative to a state-syncing effect).
+  if (lastServerCount !== unreadCount) {
+    setLastServerCount(unreadCount);
+    setUnread(unreadCount);
+  }
+  const unreadForUser = user ? unread : 0;
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    async function refreshUnread() {
+      try {
+        const response = await fetch("/api/notifications/unread-count", {
+          cache: "no-store",
+        });
+        if (cancelled) return;
+        if (response.status === 401) {
+          setUnread(0);
+          return;
+        }
+        if (!response.ok) return; // keep the last honest value on errors
+        const data = (await response.json()) as { count?: unknown };
+        if (!cancelled && typeof data.count === "number" && data.count >= 0) {
+          setUnread(data.count);
+        }
+      } catch {
+        if (!cancelled) {
+          // Network hiccup: keep the last honest value, never invent one.
+        }
+      }
+    }
+    refreshUnread();
+    window.addEventListener("focus", refreshUnread);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refreshUnread);
+    };
+  }, [user, pathname]);
 
   async function drawerSignOut() {
     setDrawerSigningOut(true);
@@ -135,11 +187,20 @@ export function HeaderShell({ user }: { user: HeaderUser | null }) {
             {user && (
               <Link
                 href="/dashboard/notifications"
-                aria-label="Notifications"
+                aria-label={
+                  unreadForUser > 0
+                    ? `Notifications (${unreadForUser} unread)`
+                    : "Notifications"
+                }
                 className="relative hidden h-8 w-8 items-center justify-center rounded-md border border-transparent text-gh-fg-muted transition-colors hover:border-gh-border hover:bg-gh-subtle hover:text-gh-fg-default sm:inline-flex"
               >
                 <Icon name="notifications" size={18} />
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gh-accent ring-2 ring-gh-canvas" />
+                {unreadForUser > 0 && (
+                  <span
+                    data-unread-indicator=""
+                    className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-gh-accent ring-2 ring-gh-canvas"
+                  />
+                )}
               </Link>
             )}
 

@@ -17,10 +17,16 @@ type Option = {
 /**
  * Multi-select for the project stack with inline "add your own" support.
  *
- * Picked technologies submit as repeated `technologyIds` inputs; anything the
- * student types submits as repeated `technologyNames` inputs — the server
- * upserts those into the `technologies` table, so a brand-new instance with an
- * empty technology list is still fully usable (and never fakes options).
+ * ONE source of truth: the parent's `selected` id list. Chips, checkbox
+ * checked-state, the count line and the fields that travel in FormData are
+ * all derived from it — the ids are submitted through hidden inputs rendered
+ * from `selected`, so a React form reset after a failed action can never
+ * desynchronise what the server receives from what the student sees. The
+ * checkboxes keep their `technologyIds` name for the no-JS fallback (the
+ * server deduplicates). Anything the student types travels as repeated
+ * `technologyNames` inputs — the server upserts those into the
+ * `technologies` table, so a brand-new instance with an empty technology
+ * list is still fully usable (and never fakes options).
  */
 export function TechnologyPicker({
   options,
@@ -36,6 +42,9 @@ export function TechnologyPicker({
   const [query, setQuery] = useState("");
   const [added, setAdded] = useState<Option[]>([]);
 
+  // Normalised selection — duplicates can never reach chips, state or FormData.
+  const selectedIds = [...new Set(selected)];
+
   const allOptions = [...options, ...added];
   const trimmed = query.trim();
   const lower = trimmed.toLowerCase();
@@ -48,7 +57,7 @@ export function TechnologyPicker({
       )
     : allOptions;
 
-  const chosen = selected
+  const chosen = selectedIds
     .map((id) => allOptions.find((option) => option.id === id))
     .filter((option): option is Option => Boolean(option));
 
@@ -57,9 +66,9 @@ export function TechnologyPicker({
 
   function toggle(id: string) {
     onChange(
-      selected.includes(id)
-        ? selected.filter((value) => value !== id)
-        : [...selected, id],
+      selectedIds.includes(id)
+        ? selectedIds.filter((value) => value !== id)
+        : [...selectedIds, id],
     );
   }
 
@@ -73,9 +82,13 @@ export function TechnologyPicker({
         { id, name, slug: slugify(name), icon: null, kind: "typed in" },
       ]);
     }
-    onChange([...selected, id]);
+    if (!selectedIds.includes(id)) onChange([...selectedIds, id]);
     setQuery("");
   }
+
+  // A stale server error must not outlive the fix: once anything is
+  // selected, the "add at least one technology" message clears immediately.
+  const visibleError = selectedIds.length === 0 ? error : undefined;
 
   return (
     <fieldset className="space-y-3">
@@ -127,6 +140,12 @@ export function TechnologyPicker({
         </div>
       )}
 
+      {/* The whole selection travels as hidden ids — rendered from state,
+          so chips, checkboxes and the posted FormData can never disagree. */}
+      {selectedIds.map((id) => (
+        <input key={`id-${id}`} type="hidden" name="technologyIds" value={id} />
+      ))}
+
       {/* Typed-in technologies travel as names — the server upserts them. */}
       {chosen
         .filter((option) => option.id.startsWith("new:"))
@@ -149,7 +168,7 @@ export function TechnologyPicker({
         ) : (
           <ul className="grid grid-cols-2 gap-1 sm:grid-cols-3">
             {filtered.map((option) => {
-              const active = selected.includes(option.id);
+              const active = selectedIds.includes(option.id);
               return (
                 <li key={option.id}>
                   <label
@@ -180,11 +199,11 @@ export function TechnologyPicker({
       <p
         className={cn(
           "font-mono text-[11px]",
-          error ? "text-gh-danger" : "text-gh-fg-subtle",
+          visibleError ? "text-gh-danger" : "text-gh-fg-subtle",
         )}
       >
-        {error ??
-          `${selected.length} selected · pick everything the stack actually uses`}
+        {visibleError ??
+          `${selectedIds.length} selected · pick everything the stack actually uses`}
       </p>
     </fieldset>
   );

@@ -13,6 +13,7 @@
     "test:google": "python3 tests/google_signin_test.py",
     "test:account": "python3 tests/account_management_test.py",
     "test:uploads": "python3 tests/upload_flow_test.py",
+    "test:bugfix": "python3 tests/notification_tech_test.py",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

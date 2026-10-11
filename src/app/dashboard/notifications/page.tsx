@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { NotificationsSeen } from "@/components/dashboard/NotificationsSeen";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { LinkButton } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -8,6 +9,7 @@ import { EmptyState, Panel } from "@/components/ui/Panel";
 import { Eyebrow } from "@/components/ui/Tag";
 import { requireUser } from "@/lib/auth/guards";
 import { getReviewActivity } from "@/lib/data/myProjects";
+import { markNotificationsSeen } from "@/lib/data/notifications";
 import { formatDate, relativeTime } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -28,8 +30,14 @@ export default async function ActivityPage() {
   const user = await requireUser("/dashboard/notifications");
   const events = await getReviewActivity(user.id);
 
+  // Opening the panel IS "mark as read": write the per-user watermark now
+  // (no-op on failure — the page must always render), and let the client
+  // component below revalidate the header so the bell clears immediately.
+  await markNotificationsSeen(user.id).catch(() => undefined);
+
   return (
     <div className="w-full py-8 sm:py-10">
+      <NotificationsSeen />
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-gh-border pb-5">
         <div>
           <Eyebrow>Moderation trail</Eyebrow>
